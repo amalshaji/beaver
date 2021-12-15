@@ -207,7 +207,7 @@ func (server *Server) request(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get a proxy connection
-	request := NewConnectionRequest(time.Duration(server.Config.Timeout) * time.Millisecond)
+	request := NewConnectionRequest(server.Config.GetTimeout())
 	server.dispatcher <- request
 	connection := <-request.connection
 	if connection == nil {
