@@ -104,27 +104,27 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 	// Serialize HTTP request
 	jsonReq, err := json.Marshal(wsp.SerializeHTTPRequest(r))
 	if err != nil {
-		return fmt.Errorf("Unable to serialize request : %s", err)
+		return fmt.Errorf("Unable to serialize request : %w", err)
 	}
 
 	// Send the serialized HTTP request to the remote Proxy
 	err = connection.ws.WriteMessage(websocket.TextMessage, jsonReq)
 	if err != nil {
-		return fmt.Errorf("Unable to write request : %s", err)
+		return fmt.Errorf("Unable to write request : %w", err)
 	}
 
 	// Pipe the HTTP request body to the remote Proxy
 	bodyWriter, err := connection.ws.NextWriter(websocket.BinaryMessage)
 	if err != nil {
-		return fmt.Errorf("Unable to get request body writer : %s", err)
+		return fmt.Errorf("Unable to get request body writer : %w", err)
 	}
 	_, err = io.Copy(bodyWriter, r.Body)
 	if err != nil {
-		return fmt.Errorf("Unable to pipe request body : %s", err)
+		return fmt.Errorf("Unable to pipe request body : %w", err)
 	}
 	err = bodyWriter.Close()
 	if err != nil {
-		return fmt.Errorf("Unable to pipe request body (close) : %s", err)
+		return fmt.Errorf("Unable to pipe request body (close) : %w", err)
 	}
 
 	// Get the serialized HTTP Response from the remote Proxy
@@ -138,14 +138,14 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 			// If more is false the channel is already closed
 			close(responseChannel)
 		}
-		return fmt.Errorf("Unable to get http response reader : %s", err)
+		return fmt.Errorf("Unable to get http response reader : %w", err)
 	}
 
 	// Read the HTTP Response
 	jsonResponse, err := ioutil.ReadAll(responseReader)
 	if err != nil {
 		close(responseChannel)
-		return fmt.Errorf("Unable to read http response : %s", err)
+		return fmt.Errorf("Unable to read http response : %w", err)
 	}
 
 	// Notify the read() goroutine that we are done reading the response
@@ -155,7 +155,7 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 	httpResponse := new(wsp.HTTPResponse)
 	err = json.Unmarshal(jsonResponse, httpResponse)
 	if err != nil {
-		return fmt.Errorf("Unable to unserialize http response : %s", err)
+		return fmt.Errorf("Unable to unserialize http response : %w", err)
 	}
 
 	// Write response headers back to the client
@@ -177,14 +177,14 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 			// If more is false the channel is already closed
 			close(responseChannel)
 		}
-		return fmt.Errorf("Unable to get http response body reader : %s", err)
+		return fmt.Errorf("Unable to get http response body reader : %w", err)
 	}
 
 	// Pipe the HTTP response body right from the remote Proxy to the client
 	_, err = io.Copy(w, responseBodyReader)
 	if err != nil {
 		close(responseBodyChannel)
-		return fmt.Errorf("Unable to pipe response body : %s", err)
+		return fmt.Errorf("Unable to pipe response body : %w", err)
 	}
 
 	// Notify read() that we are done reading the response body
