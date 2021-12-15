@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/root-gg/wsp/server"
 )
@@ -20,20 +21,13 @@ func main() {
 	}
 
 	server := server.NewServer(config)
-
-	// Handle SIGINT
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		for {
-			<-c
-			log.Println("SIGINT Detected")
-			server.Shutdown()
-			os.Exit(0)
-		}
-	}()
-
 	server.Start()
 
-	select {}
+	// Wait signals
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	<-sigCh
+
+	// When receives the signal, shutdown
+	server.Shutdown()
 }
