@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/root-gg/wsp/client"
 )
@@ -23,20 +24,13 @@ func main() {
 	}
 
 	proxy := client.NewClient(config)
-
-	// Handle SIGINT
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		for {
-			<-c
-			log.Println("SIGINT Detected")
-			proxy.Shutdown()
-			os.Exit(0)
-		}
-	}()
-
 	proxy.Start(ctx)
 
-	select {}
+	// Wait signals
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	<-sigCh
+
+	// When receives the ssignal, shutdown
+	proxy.Shutdown()
 }
