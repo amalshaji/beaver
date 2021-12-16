@@ -49,9 +49,12 @@ func (pool *Pool) Register(ws *websocket.Conn) {
 	pool.connections = append(pool.connections, connection)
 }
 
-// Offer an idle connection to the server
+// Offer offers an idle connection to the server.
 func (pool *Pool) Offer(connection *Connection) {
-	go func() { pool.idle <- connection }()
+	// The original code of root-gg/wsp was involing groutine,
+	// but the callder was also invoking goroutine,
+	// so it was deemed unncessary and removed.
+	pool.idle <- connection
 }
 
 // Clean removes dead connection from the pool
