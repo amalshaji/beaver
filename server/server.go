@@ -26,7 +26,7 @@ type Server struct {
 	pools []*Pool
 
 	// A RWMutex is a reader/writer mutual exclusion lock,
-	// and it is used to perfome exclusive control with pools operation.
+	// and it is for exclusive control with pools operation.
 	//
 	// This is locked when reading and writing pools, the timing is when:
 	// 1. (rw) registering websocket clients in /register endpoint
@@ -273,7 +273,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 3. Register the connection into server pools.
-	// s.lock is used to perfome exclusive control of pools operation.
+	// s.lock is for exclusive control of pools operation.
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
