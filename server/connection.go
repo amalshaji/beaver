@@ -18,8 +18,9 @@ import (
 // ConnectionStatus is an enumeration type which represents the status of WebSocket connection.
 type ConnectionStatus int
 
-// Status of a Connection
 const (
+	// Idle state means it is opened but not working now.
+	// The default value for Connection is Idle, so it is ok to use zero-value(int: 0) for Idle status.
 	Idle ConnectionStatus = iota
 	Busy
 	Closed
