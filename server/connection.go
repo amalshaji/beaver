@@ -48,7 +48,7 @@ func NewConnection(pool *Pool, ws *websocket.Conn) *Connection {
 	// Mark that this connection is ready to use for relay
 	c.Release()
 
-	// Start to listen to incoming message over the WebSocket connection
+	// Start to listen to incoming messages over the WebSocket connection
 	go c.read()
 
 	return c
