@@ -38,13 +38,17 @@ type Connection struct {
 
 // NewConnection returns a new Connection.
 func NewConnection(pool *Pool, ws *websocket.Conn) *Connection {
+	// Initialize a new Connection
 	c := new(Connection)
 	c.pool = pool
 	c.ws = ws
 	c.nextResponse = make(chan chan io.Reader)
+	c.status = Idle
 
+	// Mark that this connection is ready to use for relay
 	c.Release()
 
+	// Star to listening to incoming message over the WebSocket connection
 	go c.read()
 
 	return c
