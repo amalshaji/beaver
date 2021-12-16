@@ -36,10 +36,11 @@ func (pool *Pool) Start(ctx context.Context) {
 	pool.connector(ctx)
 	go func() {
 		ticker := time.Tick(time.Second)
+	L:
 		for {
 			select {
 			case <-pool.done:
-				break
+				break L
 			case <-ticker:
 				pool.connector(ctx)
 			}

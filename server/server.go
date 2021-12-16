@@ -64,10 +64,11 @@ func NewServer(config *Config) (server *Server) {
 // Start Server HTTP server
 func (server *Server) Start() {
 	go func() {
+	L:
 		for {
 			select {
 			case <-server.done:
-				break
+				break L
 			case <-time.After(5 * time.Second):
 				server.clean()
 			}
