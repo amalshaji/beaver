@@ -15,35 +15,38 @@ import (
 	"github.com/root-gg/wsp"
 )
 
+// ConnectionStatus is an enumeration type which represents the status of WebSocket connection.
+type ConnectionStatus int
+
 // Status of a Connection
 const (
-	IDLE = iota
-	BUSY
-	CLOSED
+	Idle ConnectionStatus = iota
+	Busy
+	Closed
 )
 
 // Connection manage a single websocket connection from
 type Connection struct {
 	pool         *Pool
 	ws           *websocket.Conn
-	status       int
+	status       ConnectionStatus
 	idleSince    time.Time
 	lock         sync.Mutex
 	nextResponse chan chan io.Reader
 }
 
-// NewConnection return a new Connection
-func NewConnection(pool *Pool, ws *websocket.Conn) (connection *Connection) {
-	connection = new(Connection)
-	connection.pool = pool
-	connection.ws = ws
-	connection.nextResponse = make(chan chan io.Reader)
+// NewConnection returns a new Connection.
+func NewConnection(pool *Pool, ws *websocket.Conn) *Connection {
+	c := new(Connection)
+	c.pool = pool
+	c.ws = ws
+	c.nextResponse = make(chan chan io.Reader)
 
-	connection.Release()
+	c.Release()
 
-	go connection.read()
+	go c.read()
 
-	return
+	return c
 }
 
 // read the incoming message of the connection
@@ -56,7 +59,7 @@ func (connection *Connection) read() {
 	}()
 
 	for {
-		if connection.status == CLOSED {
+		if connection.status == Closed {
 			break
 		}
 
@@ -74,7 +77,7 @@ func (connection *Connection) read() {
 			break
 		}
 
-		if connection.status != BUSY {
+		if connection.status != Busy {
 			// We received a wild unexpected message
 			break
 		}
@@ -200,15 +203,15 @@ func (connection *Connection) Take() bool {
 	connection.lock.Lock()
 	defer connection.lock.Unlock()
 
-	if connection.status == CLOSED {
+	if connection.status == Closed {
 		return false
 	}
 
-	if connection.status == BUSY {
+	if connection.status == Busy {
 		return false
 	}
 
-	connection.status = BUSY
+	connection.status = Busy
 	return true
 }
 
@@ -217,12 +220,12 @@ func (connection *Connection) Release() {
 	connection.lock.Lock()
 	defer connection.lock.Unlock()
 
-	if connection.status == CLOSED {
+	if connection.status == Closed {
 		return
 	}
 
 	connection.idleSince = time.Now()
-	connection.status = IDLE
+	connection.status = Idle
 
 	go connection.pool.Offer(connection)
 }
@@ -237,14 +240,14 @@ func (connection *Connection) Close() {
 
 // Close the connection ( without lock )
 func (connection *Connection) close() {
-	if connection.status == CLOSED {
+	if connection.status == Closed {
 		return
 	}
 
 	log.Printf("Closing connection from %s", connection.pool.id)
 
 	// This one will be executed *before* lock.Unlock()
-	defer func() { connection.status = CLOSED }()
+	defer func() { connection.status = Closed }()
 
 	// Unlock a possible read() wild message
 	close(connection.nextResponse)

@@ -64,7 +64,7 @@ func (pool *Pool) Clean() {
 	for _, connection := range pool.connections {
 		// We need to be sur we'll never close a BUSY or soon to be BUSY connection
 		connection.lock.Lock()
-		if connection.status == IDLE {
+		if connection.status == Idle {
 			idle++
 			if idle > pool.size {
 				// We have enough idle connections in the pool.
@@ -75,7 +75,7 @@ func (pool *Pool) Clean() {
 			}
 		}
 		connection.lock.Unlock()
-		if connection.status == CLOSED {
+		if connection.status == Closed {
 			continue
 		}
 		connections = append(connections, connection)
@@ -119,11 +119,11 @@ func (pool *Pool) Size() (ps *PoolSize) {
 
 	ps = new(PoolSize)
 	for _, connection := range pool.connections {
-		if connection.status == IDLE {
+		if connection.status == Idle {
 			ps.Idle++
-		} else if connection.status == BUSY {
+		} else if connection.status == Busy {
 			ps.Busy++
-		} else if connection.status == CLOSED {
+		} else if connection.status == Closed {
 			ps.Closed++
 		}
 	}
