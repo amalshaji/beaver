@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Pool handle all connections from a remote Proxy
+// Pool handles all connections from the peer.
 type Pool struct {
 	server *Server
 	id     PoolID
