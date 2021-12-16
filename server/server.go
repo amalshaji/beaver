@@ -24,8 +24,18 @@ type Server struct {
 	upgrader websocket.Upgrader
 
 	pools []*Pool
-	lock  sync.RWMutex
-	done  chan struct{}
+
+	// A RWMutex is a reader/writer mutual exclusion lock,
+	// and it is used to perfome exclusing control with pools operation.
+	//
+	// This is locked when reading and writing pools, the timing is when:
+	// 1. (rw) registering websocket clients in /register endpoint
+	// 2. (rw) remove empty pools which has no connections
+	// 3. (r) dispatching connection from available pools to clients requests
+	//
+	// And then it is released after each process is completed.
+	lock sync.RWMutex
+	done chan struct{}
 
 	dispatcher chan *ConnectionRequest
 
@@ -76,8 +86,8 @@ func (s *Server) Start() {
 	}()
 
 	r := http.NewServeMux()
-	r.HandleFunc("/register", s.register)
-	r.HandleFunc("/request", s.request)
+	r.HandleFunc("/register", s.Register)
+	r.HandleFunc("/request", s.Request)
 	r.HandleFunc("/status", s.status)
 
 	go s.dispatchConnections()
@@ -89,7 +99,8 @@ func (s *Server) Start() {
 	go func() { log.Fatal(s.server.ListenAndServe()) }()
 }
 
-// clean remove empty Pools
+// clean removes empty Pools which has no connection.
+// It is invoked every 5 sesconds and at shutdown.
 func (s *Server) clean() {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -185,8 +196,7 @@ func (s *Server) dispatchConnections() {
 	}
 }
 
-// This is the way for clients to execute HTTP requests through an Proxy
-func (s *Server) request(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 	// Parse destination URL
 	dstURL := r.Header.Get("X-PROXY-DESTINATION")
 	if dstURL == "" {
@@ -228,8 +238,9 @@ func (s *Server) request(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// This is the way for wsp clients to offer websocket connections
-func (s *Server) register(w http.ResponseWriter, r *http.Request) {
+// Request receives the WebSocket upgrade handshake request from wsp_client.
+func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
+	// 1. Upgrade a received HTTP request to a WebSocket connection
 	secretKey := r.Header.Get("X-SECRET-KEY")
 	if secretKey != s.Config.SecretKey {
 		wsp.ProxyErrorf(w, "Invalid X-SECRET-KEY")
@@ -242,6 +253,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 2. Wait a greeting message from the peer and parse it
 	// The first message should contains the remote Proxy name and size
 	_, greeting, err := ws.ReadMessage()
 	if err != nil {
