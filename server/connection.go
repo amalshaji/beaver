@@ -25,7 +25,8 @@ const (
 	Closed
 )
 
-// Connection manage a single websocket connection from
+// Connection manages a single websocket connection from the peer.
+// wsp supports multiple connections from a single peer at the same time.
 type Connection struct {
 	pool         *Pool
 	ws           *websocket.Conn
