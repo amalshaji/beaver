@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -203,18 +202,6 @@ func (connection *Connection) error(msg string) (err error) {
 		return
 	}
 
-	return
-}
-
-// Discard request body
-func (connection *Connection) discard() (err error) {
-	mt, _, err := connection.ws.NextReader()
-	if err != nil {
-		return nil
-	}
-	if mt != websocket.BinaryMessage {
-		return errors.New("Invalid body message type")
-	}
 	return
 }
 
