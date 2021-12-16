@@ -62,39 +62,39 @@ func NewServer(config *Config) (server *Server) {
 }
 
 // Start Server HTTP server
-func (server *Server) Start() {
+func (s *Server) Start() {
 	go func() {
 	L:
 		for {
 			select {
-			case <-server.done:
+			case <-s.done:
 				break L
 			case <-time.After(5 * time.Second):
-				server.clean()
+				s.clean()
 			}
 		}
 	}()
 
 	r := http.NewServeMux()
-	r.HandleFunc("/register", server.register)
-	r.HandleFunc("/request", server.request)
-	r.HandleFunc("/status", server.status)
+	r.HandleFunc("/register", s.register)
+	r.HandleFunc("/request", s.request)
+	r.HandleFunc("/status", s.status)
 
-	go server.dispatchConnections()
+	go s.dispatchConnections()
 
-	server.server = &http.Server{
-		Addr:    server.Config.GetAddr(),
+	s.server = &http.Server{
+		Addr:    s.Config.GetAddr(),
 		Handler: r,
 	}
-	go func() { log.Fatal(server.server.ListenAndServe()) }()
+	go func() { log.Fatal(s.server.ListenAndServe()) }()
 }
 
 // clean remove empty Pools
-func (server *Server) clean() {
-	server.lock.Lock()
-	defer server.lock.Unlock()
+func (s *Server) clean() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
-	if len(server.pools) == 0 {
+	if len(s.pools) == 0 {
 		return
 	}
 
@@ -102,7 +102,7 @@ func (server *Server) clean() {
 	busy := 0
 
 	var pools []*Pool
-	for _, pool := range server.pools {
+	for _, pool := range s.pools {
 		if pool.IsEmpty() {
 			log.Printf("Removing empty connection pool : %s", pool.id)
 			pool.Shutdown()
@@ -117,33 +117,33 @@ func (server *Server) clean() {
 
 	log.Printf("%d pools, %d idle, %d busy", len(pools), idle, busy)
 
-	server.pools = pools
+	s.pools = pools
 }
 
 // Dispatch connection from available pools to clients requests
-func (server *Server) dispatchConnections() {
+func (s *Server) dispatchConnections() {
 	for {
 		// A client requests a connection
-		request, ok := <-server.dispatcher
+		request, ok := <-s.dispatcher
 		if !ok {
 			// Shutdown
 			break
 		}
 
 		for {
-			server.lock.RLock()
+			s.lock.RLock()
 
-			if len(server.pools) == 0 {
+			if len(s.pools) == 0 {
 				// No connection pool available
-				server.lock.RUnlock()
+				s.lock.RUnlock()
 				break
 			}
 
 			// Build a select statement dynamically
-			cases := make([]reflect.SelectCase, len(server.pools)+1)
+			cases := make([]reflect.SelectCase, len(s.pools)+1)
 
 			// Add all pools idle connection channel
-			for i, ch := range server.pools {
+			for i, ch := range s.pools {
 				cases[i] = reflect.SelectCase{
 					Dir:  reflect.SelectRecv,
 					Chan: reflect.ValueOf(ch.idle)}
@@ -159,7 +159,7 @@ func (server *Server) dispatchConnections() {
 					Dir: reflect.SelectDefault}
 			}
 
-			server.lock.RUnlock()
+			s.lock.RUnlock()
 
 			// This call blocks
 			chosen, value, ok := reflect.Select(cases)
@@ -186,7 +186,7 @@ func (server *Server) dispatchConnections() {
 }
 
 // This is the way for clients to execute HTTP requests through an Proxy
-func (server *Server) request(w http.ResponseWriter, r *http.Request) {
+func (s *Server) request(w http.ResponseWriter, r *http.Request) {
 	// Parse destination URL
 	dstURL := r.Header.Get("X-PROXY-DESTINATION")
 	if dstURL == "" {
@@ -202,14 +202,14 @@ func (server *Server) request(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[%s] %s", r.Method, r.URL.String())
 
-	if len(server.pools) == 0 {
+	if len(s.pools) == 0 {
 		wsp.ProxyErrorf(w, "No proxy available")
 		return
 	}
 
 	// Get a proxy connection
-	request := NewConnectionRequest(server.Config.GetTimeout())
-	server.dispatcher <- request
+	request := NewConnectionRequest(s.Config.GetTimeout())
+	s.dispatcher <- request
 	connection := <-request.connection
 	if connection == nil {
 		wsp.ProxyErrorf(w, "Unable to get a proxy connection")
@@ -217,8 +217,7 @@ func (server *Server) request(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the request to the proxy
-	err = connection.proxyRequest(w, r)
-	if err != nil {
+	if err := connection.proxyRequest(w, r); err != nil {
 		// An error occurred throw the connection away
 		log.Println(err)
 		connection.Close()
@@ -230,14 +229,14 @@ func (server *Server) request(w http.ResponseWriter, r *http.Request) {
 }
 
 // This is the way for wsp clients to offer websocket connections
-func (server *Server) register(w http.ResponseWriter, r *http.Request) {
+func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 	secretKey := r.Header.Get("X-SECRET-KEY")
-	if secretKey != server.Config.SecretKey {
+	if secretKey != s.Config.SecretKey {
 		wsp.ProxyErrorf(w, "Invalid X-SECRET-KEY")
 		return
 	}
 
-	ws, err := server.upgrader.Upgrade(w, r, nil)
+	ws, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		wsp.ProxyErrorf(w, "HTTP upgrade error : %v", err)
 		return
@@ -261,20 +260,20 @@ func (server *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	server.lock.Lock()
-	defer server.lock.Unlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	// Get that client's Pool
 	var pool *Pool
-	for _, p := range server.pools {
+	for _, p := range s.pools {
 		if p.id == id {
 			pool = p
 			break
 		}
 	}
 	if pool == nil {
-		pool = NewPool(server, id)
-		server.pools = append(server.pools, pool)
+		pool = NewPool(s, id)
+		s.pools = append(s.pools, pool)
 	}
 
 	// update pool size
@@ -284,16 +283,16 @@ func (server *Server) register(w http.ResponseWriter, r *http.Request) {
 	pool.Register(ws)
 }
 
-func (server *Server) status(w http.ResponseWriter, r *http.Request) {
+func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
 // Shutdown stop the Server
-func (server *Server) Shutdown() {
-	close(server.done)
-	close(server.dispatcher)
-	for _, pool := range server.pools {
+func (s *Server) Shutdown() {
+	close(s.done)
+	close(s.dispatcher)
+	for _, pool := range s.pools {
 		pool.Shutdown()
 	}
-	server.clean()
+	s.clean()
 }

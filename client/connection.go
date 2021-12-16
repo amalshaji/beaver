@@ -30,11 +30,11 @@ type Connection struct {
 }
 
 // NewConnection create a Connection object
-func NewConnection(pool *Pool) (conn *Connection) {
-	conn = new(Connection)
-	conn.pool = pool
-	conn.status = CONNECTING
-	return
+func NewConnection(pool *Pool) *Connection {
+	c := new(Connection)
+	c.pool = pool
+	c.status = CONNECTING
+	return c
 }
 
 // Connect to the IsolatorServer using a HTTP websocket
