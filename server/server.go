@@ -264,7 +264,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
 	// Parse the greeting message
 	split := strings.Split(string(greeting), "_")
-	id := split[0]
+	id := PoolID(split[0])
 	size, err := strconv.Atoi(split[1])
 	if err != nil {
 		wsp.ProxyErrorf(w, "Unable to parse greeting message : %s", err)
@@ -275,8 +275,10 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	// Get that client's Pool
+	// 3. Register the connection into server pools.
 	var pool *Pool
+	// There is no need to create a new pool,
+	// if it is already registered in current pools.
 	for _, p := range s.pools {
 		if p.id == id {
 			pool = p
@@ -291,7 +293,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	// update pool size
 	pool.size = size
 
-	// Add the ws to the pool
+	// Add the WebSocket connection to the pool
 	pool.Register(ws)
 }
 

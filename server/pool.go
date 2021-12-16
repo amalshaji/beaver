@@ -11,7 +11,7 @@ import (
 // Pool handle all connections from a remote Proxy
 type Pool struct {
 	server *Server
-	id     string
+	id     PoolID
 
 	size int
 
@@ -22,13 +22,16 @@ type Pool struct {
 	lock sync.RWMutex
 }
 
+// PoolID represents the identifier of the connected WebSocket client.
+type PoolID string
+
 // NewPool creates a new Pool
-func NewPool(server *Server, id string) (pool *Pool) {
-	pool = new(Pool)
-	pool.server = server
-	pool.id = id
-	pool.idle = make(chan *Connection)
-	return
+func NewPool(server *Server, id PoolID) *Pool {
+	p := new(Pool)
+	p.server = server
+	p.id = id
+	p.idle = make(chan *Connection)
+	return p
 }
 
 // Register creates a new Connection and adds it to the pool
@@ -44,8 +47,6 @@ func (pool *Pool) Register(ws *websocket.Conn) {
 	log.Printf("Registering new connection from %s", pool.id)
 	connection := NewConnection(pool, ws)
 	pool.connections = append(pool.connections, connection)
-
-	return
 }
 
 // Offer an idle connection to the server
