@@ -202,6 +202,7 @@ func (s *Server) dispatchConnections() {
 }
 
 func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
+	// [1]: Receive requests to be proxied
 	// Parse destination URL
 	dstURL := r.Header.Get("X-PROXY-DESTINATION")
 	if dstURL == "" {
@@ -222,7 +223,7 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get a proxy connection
+	// [2]: Take an WebSocket connection available from pools for relaying received requests.
 	request := NewConnectionRequest(s.Config.GetTimeout())
 	// "Dispatcher" is running in a separate thread from the server by `go s.dispatchConnections()`.
 	// It waits to receive requests to dispatch connection from available pools to clients requests.
@@ -243,7 +244,7 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send the request to the proxy
+	// [3]: Send the request to the peer through the WebSocket connection.
 	if err := connection.proxyRequest(w, r); err != nil {
 		// An error occurred throw the connection away
 		log.Println(err)

@@ -110,33 +110,32 @@ func (connection *Connection) read() {
 func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Request) (err error) {
 	log.Printf("proxy request to %s", connection.pool.id)
 
-	// Serialize HTTP request
+	// [1]: Serialize HTTP request
 	jsonReq, err := json.Marshal(wsp.SerializeHTTPRequest(r))
 	if err != nil {
 		return fmt.Errorf("unable to serialize request : %w", err)
 	}
 
-	// Send the serialized HTTP request to the remote Proxy
-	err = connection.ws.WriteMessage(websocket.TextMessage, jsonReq)
-	if err != nil {
+	// [2]: Send the HTTP request to the peer
+	// Send the serialized HTTP request to the the peer
+	if err := connection.ws.WriteMessage(websocket.TextMessage, jsonReq); err != nil {
 		return fmt.Errorf("unable to write request : %w", err)
 	}
 
-	// Pipe the HTTP request body to the remote Proxy
+	// Pipe the HTTP request body to the the peer
 	bodyWriter, err := connection.ws.NextWriter(websocket.BinaryMessage)
 	if err != nil {
 		return fmt.Errorf("unable to get request body writer : %w", err)
 	}
-	_, err = io.Copy(bodyWriter, r.Body)
-	if err != nil {
+	if _, err := io.Copy(bodyWriter, r.Body); err != nil {
 		return fmt.Errorf("unable to pipe request body : %w", err)
 	}
-	err = bodyWriter.Close()
-	if err != nil {
+	if err := bodyWriter.Close(); err != nil {
 		return fmt.Errorf("unable to pipe request body (close) : %w", err)
 	}
 
-	// Get the serialized HTTP Response from the remote Proxy
+	// [3]: Read the HTTP response from the peer
+	// Get the serialized HTTP Response from the peer
 	// To do so send a new channel to the read() goroutine
 	// to get the next message reader
 	responseChannel := make(chan (io.Reader))
@@ -162,8 +161,7 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 
 	// Deserialize the HTTP Response
 	httpResponse := new(wsp.HTTPResponse)
-	err = json.Unmarshal(jsonResponse, httpResponse)
-	if err != nil {
+	if err := json.Unmarshal(jsonResponse, httpResponse); err != nil {
 		return fmt.Errorf("unable to unserialize http response : %w", err)
 	}
 
@@ -175,7 +173,7 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 	}
 	w.WriteHeader(httpResponse.StatusCode)
 
-	// Get the HTTP Response body from the remote Proxy
+	// Get the HTTP Response body from the the peer
 	// To do so send a new channel to the read() goroutine
 	// to get the next message reader
 	responseBodyChannel := make(chan (io.Reader))
@@ -190,8 +188,7 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Pipe the HTTP response body right from the remote Proxy to the client
-	_, err = io.Copy(w, responseBodyReader)
-	if err != nil {
+	if _, err := io.Copy(w, responseBodyReader); err != nil {
 		close(responseBodyChannel)
 		return fmt.Errorf("unable to pipe response body : %w", err)
 	}
