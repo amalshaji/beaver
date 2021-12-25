@@ -45,7 +45,8 @@ type Server struct {
 // ConnectionRequest is used to request a proxy connection from the dispatcher
 type ConnectionRequest struct {
 	connection chan *Connection
-	timeout    <-chan time.Time
+	// TODO: it can be replaced with context.Context?
+	timeout <-chan time.Time
 }
 
 // NewConnectionRequest creates a new connection request
@@ -86,10 +87,14 @@ func (s *Server) Start() {
 	}()
 
 	r := http.NewServeMux()
+	// TODO: I want to detach the handler functon from the Server struct,
+	// but it is tightly coupled to the internal state of the Server.
 	r.HandleFunc("/register", s.Register)
 	r.HandleFunc("/request", s.Request)
 	r.HandleFunc("/status", s.status)
 
+	// Dispatch connection from available pools to clients requests
+	// in a separate thread from the server thread.
 	go s.dispatchConnections()
 
 	s.server = &http.Server{
@@ -219,9 +224,21 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 
 	// Get a proxy connection
 	request := NewConnectionRequest(s.Config.GetTimeout())
+	// "Dispatcher" is running in a separate thread from the server by `go s.dispatchConnections()`.
+	// It waits to receive requests to dispatch connection from available pools to clients requests.
+	// https://github.com/hgsgtk/wsp/blob/ea4902a8e11f820268e52a6245092728efeffd7f/server/server.go#L93
+	//
+	// Notify request from handler to dispatcher through Server.dispatcher channel.
 	s.dispatcher <- request
+	// Dispatcher tries to find an available connection pool,
+	// and it returns the connection through Server.connection channel.
+	// https://github.com/hgsgtk/wsp/blob/ea4902a8e11f820268e52a6245092728efeffd7f/server/server.go#L189
+	//
+	// Here waiting for a result from dispatcher.
 	connection := <-request.connection
 	if connection == nil {
+		// It means that dispatcher has set `nil` which is a system error case that is
+		// not expected in the normal flow.
 		wsp.ProxyErrorf(w, "Unable to get a proxy connection")
 		return
 	}
