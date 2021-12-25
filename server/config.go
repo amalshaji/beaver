@@ -1,7 +1,7 @@
 package server
 
 import (
-	"io/ioutil"
+	"os"
 	"strconv"
 	"time"
 
@@ -41,7 +41,7 @@ func NewConfig() (config *Config) {
 func LoadConfiguration(path string) (config *Config, err error) {
 	config = NewConfig()
 
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return
 	}

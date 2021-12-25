@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
@@ -150,7 +149,7 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Read the HTTP Response
-	jsonResponse, err := ioutil.ReadAll(responseReader)
+	jsonResponse, err := io.ReadAll(responseReader)
 	if err != nil {
 		close(responseChannel)
 		return fmt.Errorf("unable to read http response : %w", err)

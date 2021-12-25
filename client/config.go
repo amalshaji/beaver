@@ -1,7 +1,7 @@
 package client
 
 import (
-	"io/ioutil"
+	"os"
 
 	uuid "github.com/nu7hatch/gouuid"
 	"gopkg.in/yaml.v2"
@@ -37,7 +37,7 @@ func NewConfig() (config *Config) {
 func LoadConfiguration(path string) (config *Config, err error) {
 	config = NewConfig()
 
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return
 	}

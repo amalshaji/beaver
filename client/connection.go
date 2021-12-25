@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -129,7 +128,7 @@ func (connection *Connection) serve(ctx context.Context) {
 			log.Printf("Unable to get response body reader : %v", err)
 			break
 		}
-		req.Body = ioutil.NopCloser(bodyReader)
+		req.Body = io.NopCloser(bodyReader)
 
 		// Execute request
 		resp, err := connection.pool.client.client.Do(req)
