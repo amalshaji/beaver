@@ -38,7 +38,7 @@ type Server struct {
 	lock sync.RWMutex
 	done chan struct{}
 
-	// Throught dispatcher channel it communicates between "server" thread
+	// Through dispatcher channel it communicates between "server" thread
 	// and "dispatcher" thread.
 	dispatcher chan *ConnectionRequest
 
