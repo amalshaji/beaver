@@ -23,6 +23,7 @@ type Server struct {
 
 	upgrader websocket.Upgrader
 
+	// In pools, keep connections with WebSocket peers.
 	pools []*Pool
 
 	// A RWMutex is a reader/writer mutual exclusion lock,
@@ -37,6 +38,8 @@ type Server struct {
 	lock sync.RWMutex
 	done chan struct{}
 
+	// Throught dispatcher channel it communicates between "server" thread
+	// and "dispatcher" thread.
 	dispatcher chan *ConnectionRequest
 
 	server *http.Server
