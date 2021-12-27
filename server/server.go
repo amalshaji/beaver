@@ -38,8 +38,9 @@ type Server struct {
 	lock sync.RWMutex
 	done chan struct{}
 
-	// Through dispatcher channel it communicates between "server" thread
-	// and "dispatcher" thread.
+	// Through dispatcher channel it communicates between "server" thread and "dispatcher" thread.
+	// "server" thread sends the value to this channel when accepting requests in the endpoint /requests,
+	// and "dispatcher" thread reads this channel.
 	dispatcher chan *ConnectionRequest
 
 	server *http.Server
@@ -142,10 +143,11 @@ func (s *Server) clean() {
 // Dispatch connection from available pools to clients requests
 func (s *Server) dispatchConnections() {
 	for {
-		// A client requests a connection
+		// The operator <- is "receive operator", which expression blocks until a value is available.
 		request, ok := <-s.dispatcher
 		if !ok {
-			// Shutdown
+			// The value of `ok` is false if it is a zero value generated because the channel is closed an empty.
+			// In this case, that means server shutdowns.
 			break
 		}
 
