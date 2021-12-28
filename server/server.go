@@ -148,7 +148,7 @@ func (s *Server) dispatchConnections() {
 			break
 		}
 
-		// A timeout is set for each dispatch requet.
+		// A timeout is set for each dispatch request.
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, s.Config.GetTimeout())
 		defer cancel()
