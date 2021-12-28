@@ -157,13 +157,13 @@ func (s *Server) dispatchConnections() {
 		ctx, cancel := context.WithTimeout(ctx, s.Config.GetTimeout())
 		defer cancel()
 
+	L:
 		for {
 			select {
 			case <-ctx.Done(): // The timeout elapses
-				break
+				break L
+			default: // Go through
 			}
-
-			time.Sleep(1001 * time.Millisecond)
 
 			s.lock.RLock()
 
