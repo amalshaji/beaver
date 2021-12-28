@@ -28,11 +28,23 @@ const (
 // Connection manages a single websocket connection from the peer.
 // wsp supports multiple connections from a single peer at the same time.
 type Connection struct {
-	pool         *Pool
-	ws           *websocket.Conn
-	status       ConnectionStatus
-	idleSince    time.Time
-	lock         sync.Mutex
+	pool      *Pool
+	ws        *websocket.Conn
+	status    ConnectionStatus
+	idleSince time.Time
+	lock      sync.Mutex
+	// nextResponse is the channel of channel to wait an HTTP response.
+	//
+	// In advance, the `read` function waits to receive the HTTP response as a separate thread "reader".
+	// (See https://github.com/hgsgtk/wsp/blob/29cc73bbd67de18f1df295809166a7a5ef52e9fa/server/connection.go#L56 )
+	//
+	// When a "server" thread proxies, it sends the HTTP request to the peer over the WebSocket,
+	// and sends the channel of the io.Reader interface (chan io.Reader) that can read the HTTP response to the field `nextResponse`,
+	// then waits until the value is written in the channel (chan io.Reader) by another thread "reader".
+	//
+	// After the thread "reader" detects that the HTTP response from the peer of the WebSocket connection has been written,
+	// it sends the value to the channel (chan io.Reader),
+	// and the "server" thread can proceed to process the rest procedures.
 	nextResponse chan chan io.Reader
 }
 
@@ -87,16 +99,17 @@ func (connection *Connection) read() {
 			break
 		}
 
-		// We received a message from the proxy
-		// It is expected to be either a HttpResponse or a HttpResponseBody
-		// We wait for proxyRequest to send a channel to get the message
+		// When it gets here, it is expected to be either a HttpResponse or a HttpResponseBody has been returned.
+		//
+		// Next, it waits to receive the value from the Connection.proxyRequest function that is invoked in the "server" thread.
+		// https://github.com/hgsgtk/wsp/blob/29cc73bbd67de18f1df295809166a7a5ef52e9fa/server/connection.go#L157
 		c := <-connection.nextResponse
 		if c == nil {
 			// We have been unlocked by Close()
 			break
 		}
 
-		// Send the reader back to proxyRequest
+		// Send the reader back to Connection.proxyRequest
 		c <- reader
 
 		// Wait for proxyRequest to close the channel
