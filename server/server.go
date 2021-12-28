@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"log"
 	"math/rand"
 	"net/http"
@@ -151,7 +152,19 @@ func (s *Server) dispatchConnections() {
 			break
 		}
 
+		// A timeout is set for each dispatch requet.
+		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(ctx, s.Config.GetTimeout())
+		defer cancel()
+
 		for {
+			select {
+			case <-ctx.Done(): // The timeout elapses
+				break
+			}
+
+			time.Sleep(1001 * time.Millisecond)
+
 			s.lock.RLock()
 
 			if len(s.pools) == 0 {
@@ -169,26 +182,13 @@ func (s *Server) dispatchConnections() {
 					Dir:  reflect.SelectRecv,
 					Chan: reflect.ValueOf(ch.idle)}
 			}
-
-			// Add timeout channel
-			if request.timeout != nil {
-				cases[len(cases)-1] = reflect.SelectCase{
-					Dir:  reflect.SelectRecv,
-					Chan: reflect.ValueOf(request.timeout)}
-			} else {
-				cases[len(cases)-1] = reflect.SelectCase{
-					Dir: reflect.SelectDefault}
-			}
+			cases[len(cases)-1] = reflect.SelectCase{
+				Dir: reflect.SelectDefault}
 
 			s.lock.RUnlock()
 
 			// This call blocks
-			chosen, value, ok := reflect.Select(cases)
-
-			if chosen == len(cases)-1 {
-				// a timeout occured
-				break
-			}
+			_, value, ok := reflect.Select(cases)
 			if !ok {
 				// a proxy pool has been removed, try again
 				continue
