@@ -169,7 +169,7 @@ func (s *Server) dispatchConnections() {
 			}
 
 			// [1]: Select a pool which has an idle connection
-			// Build a select statement dynamically to handle an arbitary number of pools.
+			// Build a select statement dynamically to handle an arbitrary number of pools.
 			cases := make([]reflect.SelectCase, len(s.pools)+1)
 			for i, ch := range s.pools {
 				cases[i] = reflect.SelectCase{
