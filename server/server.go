@@ -166,17 +166,15 @@ func (s *Server) dispatchConnections() {
 			}
 
 			s.lock.RLock()
-
 			if len(s.pools) == 0 {
 				// No connection pool available
 				s.lock.RUnlock()
 				break
 			}
 
-			// Build a select statement dynamically
+			// [1]: Select a pool which has an idle connection
+			// Build a select statement dynamically to handle an arbitary number of pools.
 			cases := make([]reflect.SelectCase, len(s.pools)+1)
-
-			// Add all pools idle connection channel
 			for i, ch := range s.pools {
 				cases[i] = reflect.SelectCase{
 					Dir:  reflect.SelectRecv,
@@ -184,18 +182,15 @@ func (s *Server) dispatchConnections() {
 			}
 			cases[len(cases)-1] = reflect.SelectCase{
 				Dir: reflect.SelectDefault}
-
 			s.lock.RUnlock()
 
-			// This call blocks
 			_, value, ok := reflect.Select(cases)
 			if !ok {
-				// a proxy pool has been removed, try again
-				continue
+				continue // a pool has been removed, try again
 			}
 			connection, _ := value.Interface().(*Connection)
 
-			// Verify that we can use this connection
+			// [2]: Verify that we can use this connection and take it.
 			if connection.Take() {
 				request.connection <- connection
 				break
