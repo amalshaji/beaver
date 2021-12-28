@@ -50,17 +50,12 @@ type Server struct {
 // ConnectionRequest is used to request a proxy connection from the dispatcher
 type ConnectionRequest struct {
 	connection chan *Connection
-	// TODO: it can be replaced with context.Context?
-	timeout <-chan time.Time
 }
 
 // NewConnectionRequest creates a new connection request
 func NewConnectionRequest(timeout time.Duration) (cr *ConnectionRequest) {
 	cr = new(ConnectionRequest)
 	cr.connection = make(chan *Connection)
-	if timeout > 0 {
-		cr.timeout = time.After(timeout)
-	}
 	return
 }
 
@@ -144,6 +139,7 @@ func (s *Server) clean() {
 // Dispatch connection from available pools to clients requests
 func (s *Server) dispatchConnections() {
 	for {
+		// Runs in an infinite loop and keeps receiving the value from the `server.dispatcher` channel
 		// The operator <- is "receive operator", which expression blocks until a value is available.
 		request, ok := <-s.dispatcher
 		if !ok {
