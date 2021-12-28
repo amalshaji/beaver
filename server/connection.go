@@ -140,22 +140,21 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 		return fmt.Errorf("unable to pipe request body (close) : %w", err)
 	}
 
-	// [3]: Read the HTTP response from the peer
-	// Get the serialized HTTP Response from the peer
-	// To do so send a new channel to the read() goroutine
-	// to get the next message reader
+	// [3]: Wait the HTTP response is ready
 	responseChannel := make(chan (io.Reader))
 	connection.nextResponse <- responseChannel
-	responseReader, more := <-responseChannel
+	responseReader, ok := <-responseChannel
 	if responseReader == nil {
-		if more {
-			// If more is false the channel is already closed
+		if ok {
+			// The value of ok is false, the channel is closed and empty.
+			// See the Receiver operator in https://go.dev/ref/spec for more information.
 			close(responseChannel)
 		}
 		return fmt.Errorf("unable to get http response reader : %w", err)
 	}
 
-	// Read the HTTP Response
+	// [4]: Read the HTTP response from the peer
+	// Get the serialized HTTP Response from the peer
 	jsonResponse, err := io.ReadAll(responseReader)
 	if err != nil {
 		close(responseChannel)
@@ -184,9 +183,9 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 	// to get the next message reader
 	responseBodyChannel := make(chan (io.Reader))
 	connection.nextResponse <- responseBodyChannel
-	responseBodyReader, more := <-responseBodyChannel
+	responseBodyReader, ok := <-responseBodyChannel
 	if responseBodyReader == nil {
-		if more {
+		if ok {
 			// If more is false the channel is already closed
 			close(responseChannel)
 		}
