@@ -114,6 +114,13 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		return fmt.Errorf("unable to serialize request : %w", err)
 	}
+	// i.e.
+	// {
+	// 		"Method":"GET",
+	// 		"URL":"http://localhost:8081/hello",
+	// 		"Header":{"Accept":["*/*"],"User-Agent":["curl/7.77.0"],"X-Proxy-Destination":["http://localhost:8081/hello"]},
+	//		"ContentLength":0
+	// }
 
 	// [2]: Send the HTTP request to the peer
 	// Send the serialized HTTP request to the the peer
