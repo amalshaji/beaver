@@ -191,6 +191,7 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 	}
 	w.WriteHeader(httpResponse.StatusCode)
 
+	// [5]: Wait the HTTP response body is ready
 	// Get the HTTP Response body from the the peer
 	// To do so send a new channel to the read() goroutine
 	// to get the next message reader
@@ -205,6 +206,7 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 		return fmt.Errorf("unable to get http response body reader : %w", err)
 	}
 
+	// [6]: Read the HTTP response body from the peer
 	// Pipe the HTTP response body right from the remote Proxy to the client
 	if _, err := io.Copy(w, responseBodyReader); err != nil {
 		close(responseBodyChannel)
