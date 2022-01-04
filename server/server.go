@@ -87,7 +87,7 @@ func (s *Server) Start() {
 	}()
 
 	r := http.NewServeMux()
-	// TODO: I want to detach the handler functon from the Server struct,
+	// TODO: I want to detach the handler function from the Server struct,
 	// but it is tightly coupled to the internal state of the Server.
 	r.HandleFunc("/register", s.Register)
 	r.HandleFunc("/request", s.Request)
