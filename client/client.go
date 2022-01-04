@@ -7,8 +7,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Client connects to one or more Server using HTTP websockets
-// The Server can then send HTTP requests to execute
+// Client connects to one or more Server using HTTP websockets.
+// The Server can then send HTTP requests to execute.
 type Client struct {
 	Config *Config
 
@@ -17,7 +17,7 @@ type Client struct {
 	pools  map[string]*Pool
 }
 
-// NewClient creates a new Proxy
+// NewClient creates a new Client.
 func NewClient(config *Config) (c *Client) {
 	c = new(Client)
 	c.Config = config

@@ -59,11 +59,10 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 		connection.pool.client.Config.ID,
 		connection.pool.client.Config.PoolIdleSize,
 	)
-	err = connection.ws.WriteMessage(websocket.TextMessage, []byte(greeting))
-	if err != nil {
+	if err := connection.ws.WriteMessage(websocket.TextMessage, []byte(greeting)); err != nil {
 		log.Println("greeting error :", err)
 		connection.Close()
-		return
+		return err
 	}
 
 	go connection.serve(ctx)
