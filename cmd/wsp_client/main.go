@@ -31,6 +31,6 @@ func main() {
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 	<-sigCh
 
-	// When receives the ssignal, shutdown
+	// When receives the signal, shutdown
 	proxy.Shutdown()
 }
