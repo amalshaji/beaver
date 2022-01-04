@@ -35,13 +35,15 @@ func NewPool(client *Client, target string, secretKey string) (pool *Pool) {
 func (pool *Pool) Start(ctx context.Context) {
 	pool.connector(ctx)
 	go func() {
-		ticker := time.Tick(time.Second)
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
 	L:
 		for {
 			select {
 			case <-pool.done:
 				break L
-			case <-ticker:
+			case <-ticker.C:
 				pool.connector(ctx)
 			}
 		}
