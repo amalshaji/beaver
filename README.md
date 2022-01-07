@@ -4,6 +4,8 @@ WS PROXY
 This is a reverse HTTP proxy over websockets.
 The aim is to securely make call to internal APIs from outside.
 
+The detailed design is described at the series of [Reverse HTTP proxy over WebSocket in Go](https://dev.to/hgsgtk/reverse-http-proxy-over-websocket-in-go-part-1-13n4) on dev.to.
+
 How does it works
 -----------------
 
