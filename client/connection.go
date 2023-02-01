@@ -39,9 +39,9 @@ func NewConnection(pool *Pool) *Connection {
 // Connect to the IsolatorServer using a HTTP websocket
 func (connection *Connection) Connect(ctx context.Context) (err error) {
 	log.Printf("Connecting to %s", connection.pool.target)
-
+	var res *http.Response
 	// Create a new TCP(/TLS) connection ( no use of net.http )
-	connection.ws, _, err = connection.pool.client.dialer.DialContext(
+	connection.ws, res, err = connection.pool.client.dialer.DialContext(
 		ctx,
 		connection.pool.target,
 		http.Header{
@@ -52,7 +52,9 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 	)
 
 	if err != nil {
-		return err
+		bodyBytes, _ := io.ReadAll(res.Body)
+		defer res.Body.Close()
+		log.Fatal(string(bodyBytes))
 	}
 
 	log.Printf("Connected to %s", connection.pool.target)
