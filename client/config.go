@@ -1,15 +1,20 @@
 package client
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	uuid "github.com/nu7hatch/gouuid"
 	"gopkg.in/yaml.v2"
 )
 
 // Config configures an Proxy
 type Config struct {
-	ID           string
+	id           string
+	subdomain    string
+	port         int
 	Targets      []string
 	PoolIdleSize int
 	PoolMaxSize  int
@@ -24,7 +29,7 @@ func NewConfig() (config *Config) {
 	if err != nil {
 		panic(err)
 	}
-	config.ID = id.String()
+	config.id = id.String()
 
 	config.Targets = []string{"wss://t.amal.sh"}
 	config.PoolIdleSize = 1
@@ -34,7 +39,7 @@ func NewConfig() (config *Config) {
 }
 
 // LoadConfiguration loads configuration from a YAML file
-func LoadConfiguration(path string) (config *Config, err error) {
+func LoadConfiguration(path, subdomain string, port int) (config *Config, err error) {
 	config = NewConfig()
 
 	bytes, err := os.ReadFile(path)
@@ -46,6 +51,20 @@ func LoadConfiguration(path string) (config *Config, err error) {
 	if err != nil {
 		return
 	}
+	for i, v := range config.Targets {
+		if !strings.HasSuffix(v, "/register") {
+			config.Targets[i] = fmt.Sprintf("%s/register", v)
+		}
+	}
+
+	if subdomain == "" {
+		subdomain, err = gonanoid.New(6)
+		if err != nil {
+			panic(err)
+		}
+	}
+	config.subdomain = subdomain
+	config.port = port
 
 	return
 }

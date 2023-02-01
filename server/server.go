@@ -197,20 +197,64 @@ func (s *Server) dispatchConnections() {
 	}
 }
 
+func (s *Server) getSubdomainFromHost(host string) (string, error) {
+	if !strings.HasPrefix(host, "http://") {
+		host = fmt.Sprintf("http://%s", host)
+	}
+	url, err := url.Parse(host)
+
+	if err != nil {
+		return "", err
+	}
+
+	hostname := url.Hostname()
+
+	if len(strings.Split(hostname, ".")) == 1 {
+		return "", fmt.Errorf("subdomain required")
+	}
+	if strings.HasSuffix(hostname, ".localhost") {
+		return strings.Replace(hostname, ".localhost", "", 1), nil
+	} else if strings.HasSuffix(hostname, ".127.0.0.1") {
+		return strings.Replace(hostname, ".127.0.0.1", "", 1), nil
+	}
+	return strings.Replace(hostname, fmt.Sprintf(".%s", s.Config.Host), "", 1), nil
+}
+
 func (s *Server) Request(c echo.Context) error {
 	// [1]: Receive requests to be proxied
 	// Parse destination URL
-	dstURL := fmt.Sprintf("http://localhost:5173/%s", c.Param("*"))
+	var dstURL string
+
+	subdomain, err := s.getSubdomainFromHost(c.Request().Host)
+
+	if err != nil {
+		return beaver.ProxyErrorf(c, err.Error())
+	}
+
+	for _, p := range s.pools {
+		if p.subdomain == subdomain {
+			dstURL = p.localServer
+			break
+		}
+	}
+
+	if dstURL == "" {
+		return beaver.ProxyErrorf(c, "unregistered tunnel subdomain")
+	}
+
+	dstURL = fmt.Sprintf("%s/%s", dstURL, c.Param("*"))
+	fmt.Println(dstURL)
 	if c.QueryString() != "" {
 		dstURL = fmt.Sprintf("%s?%s", dstURL, c.QueryString())
 	}
 	if dstURL == "" {
-		return beaver.ProxyErrorf(c, "Missing X-PROXY-DESTINATION header")
+		return beaver.ProxyErrorf(c, "Subdomain required")
 	}
 	URL, err := url.Parse(dstURL)
 	if err != nil {
-		return beaver.ProxyErrorf(c, "Unable to parse X-PROXY-DESTINATION header")
+		return beaver.ProxyErrorf(c, "Unable to parse destination local server URL")
 	}
+
 	c.Request().URL = URL
 
 	log.Printf("[%s] %s", c.Request().Method, c.Request().URL.String())
@@ -255,6 +299,9 @@ func (s *Server) Request(c echo.Context) error {
 // Request receives the WebSocket upgrade handshake request from wsp_client.
 func (s *Server) Register(c echo.Context) error {
 	// 1. Upgrade a received HTTP request to a WebSocket connection
+	subdomain := c.Request().Header.Get("X-TUNNEL-SUBDOMAIN")
+	localServer := c.Request().Header.Get("X-LOCAL-SERVER")
+
 	secretKey := c.Request().Header.Get("X-SECRET-KEY")
 	if secretKey != s.Config.SecretKey {
 		return beaver.ProxyErrorf(c, "Invalid X-SECRET-KEY")
@@ -288,16 +335,23 @@ func (s *Server) Register(c echo.Context) error {
 	defer s.lock.Unlock()
 
 	var pool *Pool
+
 	// There is no need to create a new pool,
 	// if it is already registered in current pools.
 	for _, p := range s.pools {
-		if p.id == id {
-			pool = p
-			break
+		if p.subdomain == subdomain {
+			if p.id == id {
+				pool = p
+				break
+			} else {
+				ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "subdomain already in use"))
+				ws.Close()
+				return beaver.ProxyErrorf(c, "subdomain already in use")
+			}
 		}
 	}
 	if pool == nil {
-		pool = NewPool(s, id)
+		pool = NewPool(s, id, subdomain, localServer)
 		s.pools = append(s.pools, pool)
 	}
 	// update pool size

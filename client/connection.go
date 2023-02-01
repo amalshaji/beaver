@@ -44,7 +44,11 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 	connection.ws, _, err = connection.pool.client.dialer.DialContext(
 		ctx,
 		connection.pool.target,
-		http.Header{"X-SECRET-KEY": {connection.pool.secretKey}},
+		http.Header{
+			"X-SECRET-KEY":       {connection.pool.secretKey},
+			"X-TUNNEL-SUBDOMAIN": {connection.pool.subdomain},
+			"X-LOCAL-SERVER":     {fmt.Sprintf("http://localhost:%d", connection.pool.localPort)},
+		},
 	)
 
 	if err != nil {
@@ -56,7 +60,7 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 	// Send the greeting message with proxy id and wanted pool size.
 	greeting := fmt.Sprintf(
 		"%s_%d",
-		connection.pool.client.Config.ID,
+		connection.pool.client.Config.id,
 		connection.pool.client.Config.PoolIdleSize,
 	)
 	if err := connection.ws.WriteMessage(websocket.TextMessage, []byte(greeting)); err != nil {

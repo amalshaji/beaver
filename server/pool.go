@@ -10,8 +10,10 @@ import (
 
 // Pool handles all connections from the peer.
 type Pool struct {
-	server *Server
-	id     PoolID
+	server      *Server
+	id          PoolID
+	subdomain   string
+	localServer string
 
 	size int
 
@@ -26,10 +28,12 @@ type Pool struct {
 type PoolID string
 
 // NewPool creates a new Pool
-func NewPool(server *Server, id PoolID) *Pool {
+func NewPool(server *Server, id PoolID, subdomain, localServer string) *Pool {
 	p := new(Pool)
 	p.server = server
 	p.id = id
+	p.subdomain = subdomain
+	p.localServer = localServer
 	p.idle = make(chan *Connection)
 	return p
 }

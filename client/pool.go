@@ -13,6 +13,8 @@ type Pool struct {
 	client    *Client
 	target    string
 	secretKey string
+	subdomain string
+	localPort int
 
 	connections []*Connection
 	lock        sync.RWMutex
@@ -21,12 +23,14 @@ type Pool struct {
 }
 
 // NewPool creates a new Pool
-func NewPool(client *Client, target string, secretKey string) (pool *Pool) {
+func NewPool(client *Client, target string, config *Config) (pool *Pool) {
 	pool = new(Pool)
 	pool.client = client
 	pool.target = target
 	pool.connections = make([]*Connection, 0)
-	pool.secretKey = secretKey
+	pool.secretKey = config.SecretKey
+	pool.subdomain = config.subdomain
+	pool.localPort = config.port
 	pool.done = make(chan struct{})
 	return
 }
