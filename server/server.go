@@ -200,8 +200,14 @@ func (s *Server) dispatchConnections() {
 }
 
 func (s *Server) getSubdomainFromHost(host string) (string, error) {
-	if !strings.HasPrefix(host, "http://") {
-		host = fmt.Sprintf("http://%s", host)
+	var httpScheme string
+	if s.Config.Secure {
+		httpScheme = "https"
+	} else {
+		httpScheme = "http"
+	}
+	if !strings.HasPrefix(host, httpScheme+"://") {
+		host = fmt.Sprintf("%s://%s", httpScheme, host)
 	}
 	url, err := url.Parse(host)
 
@@ -211,15 +217,10 @@ func (s *Server) getSubdomainFromHost(host string) (string, error) {
 
 	hostname := url.Hostname()
 
-	if len(strings.Split(hostname, ".")) == 1 {
+	if !strings.HasSuffix(hostname, "."+s.Config.Domain) {
 		return "", fmt.Errorf("subdomain required")
 	}
-	if strings.HasSuffix(hostname, ".localhost") {
-		return strings.Replace(hostname, ".localhost", "", 1), nil
-	} else if strings.HasSuffix(hostname, ".127.0.0.1") {
-		return strings.Replace(hostname, ".127.0.0.1", "", 1), nil
-	}
-	return strings.Replace(hostname, fmt.Sprintf(".%s", s.Config.Host), "", 1), nil
+	return strings.Replace(hostname, "."+s.Config.Domain, "", 1), nil
 }
 
 func (s *Server) Request(c echo.Context) error {

@@ -17,6 +17,8 @@ type UserConfig struct {
 type Config struct {
 	Host        string
 	Port        int
+	Domain      string
+	Secure      bool
 	Timeout     int
 	IdleTimeout int
 	Users       []UserConfig
