@@ -11,7 +11,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/root-gg/wsp"
+	"github.com/amalshaji/beaver"
 )
 
 // Status of a Connection
@@ -71,9 +71,9 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 }
 
 // the main loop it :
-//  - wait to receive HTTP requests from the Server
-//  - execute HTTP requests
-//  - send HTTP response back to the Server
+//   - wait to receive HTTP requests from the Server
+//   - execute HTTP requests
+//   - send HTTP response back to the Server
 //
 // As in the server code there is no buffering of HTTP request/response body
 // As is the server if any error occurs the connection is closed/throwed
@@ -106,14 +106,14 @@ func (connection *Connection) serve(ctx context.Context) {
 		go connection.pool.connector(ctx)
 
 		// Deserialize request
-		httpRequest := new(wsp.HTTPRequest)
+		httpRequest := new(beaver.HTTPRequest)
 		err = json.Unmarshal(jsonRequest, httpRequest)
 		if err != nil {
 			connection.error(fmt.Sprintf("Unable to deserialize json http request : %s\n", err))
 			break
 		}
 
-		req, err := wsp.UnserializeHTTPRequest(httpRequest)
+		req, err := beaver.UnserializeHTTPRequest(httpRequest)
 		if err != nil {
 			connection.error(fmt.Sprintf("Unable to deserialize http request : %v\n", err))
 			break
@@ -140,7 +140,7 @@ func (connection *Connection) serve(ctx context.Context) {
 		}
 
 		// Serialize response
-		jsonResponse, err := json.Marshal(wsp.SerializeHTTPResponse(resp))
+		jsonResponse, err := json.Marshal(beaver.SerializeHTTPResponse(resp))
 		if err != nil {
 			err = connection.error(fmt.Sprintf("Unable to serialize response : %v\n", err))
 			if err != nil {
@@ -172,7 +172,7 @@ func (connection *Connection) serve(ctx context.Context) {
 }
 
 func (connection *Connection) error(msg string) (err error) {
-	resp := wsp.NewHTTPResponse()
+	resp := beaver.NewHTTPResponse()
 	resp.StatusCode = 527
 
 	log.Println(msg)

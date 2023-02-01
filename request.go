@@ -1,4 +1,4 @@
-package wsp
+package beaver
 
 import (
 	"fmt"

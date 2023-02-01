@@ -1,12 +1,23 @@
-module github.com/root-gg/wsp
+module github.com/amalshaji/beaver
 
-go 1.17
+go 1.19
 
 require (
 	github.com/gorilla/websocket v1.4.2
+	github.com/labstack/echo/v4 v4.10.0
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
-	github.com/root-gg/utils v0.0.0-20151025161626-38f45ede2ce2
 	gopkg.in/yaml.v2 v2.0.0-20160928153709-a5b47d31c556
 )
 
-require gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+require (
+	github.com/labstack/gommon v0.4.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.16 // indirect
+	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/valyala/fasttemplate v1.2.2 // indirect
+	golang.org/x/crypto v0.2.0 // indirect
+	golang.org/x/net v0.4.0 // indirect
+	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/text v0.5.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+)

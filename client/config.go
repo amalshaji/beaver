@@ -26,8 +26,8 @@ func NewConfig() (config *Config) {
 	}
 	config.ID = id.String()
 
-	config.Targets = []string{"ws://127.0.0.1:8080/register"}
-	config.PoolIdleSize = 10
+	config.Targets = []string{"wss://t.amal.sh"}
+	config.PoolIdleSize = 1
 	config.PoolMaxSize = 100
 
 	return

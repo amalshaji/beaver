@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"sync"
 	"time"
 
+	"github.com/amalshaji/beaver"
 	"github.com/gorilla/websocket"
-
-	"github.com/root-gg/wsp"
+	"github.com/labstack/echo/v4"
 )
 
 // ConnectionStatus is an enumeration type which represents the status of WebSocket connection.
@@ -119,11 +118,11 @@ func (connection *Connection) read() {
 }
 
 // Proxy a HTTP request through the Proxy over the websocket connection
-func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Request) (err error) {
+func (connection *Connection) proxyRequest(c echo.Context) (err error) {
 	log.Printf("proxy request to %s", connection.pool.id)
 
 	// [1]: Serialize HTTP request
-	jsonReq, err := json.Marshal(wsp.SerializeHTTPRequest(r))
+	jsonReq, err := json.Marshal(beaver.SerializeHTTPRequest(c.Request()))
 	if err != nil {
 		return fmt.Errorf("unable to serialize request : %w", err)
 	}
@@ -146,7 +145,7 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		return fmt.Errorf("unable to get request body writer : %w", err)
 	}
-	if _, err := io.Copy(bodyWriter, r.Body); err != nil {
+	if _, err := io.Copy(bodyWriter, c.Request().Body); err != nil {
 		return fmt.Errorf("unable to pipe request body : %w", err)
 	}
 	if err := bodyWriter.Close(); err != nil {
@@ -178,7 +177,7 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 	close(responseChannel)
 
 	// Deserialize the HTTP Response
-	httpResponse := new(wsp.HTTPResponse)
+	httpResponse := new(beaver.HTTPResponse)
 	if err := json.Unmarshal(jsonResponse, httpResponse); err != nil {
 		return fmt.Errorf("unable to unserialize http response : %w", err)
 	}
@@ -186,10 +185,10 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 	// Write response headers back to the client
 	for header, values := range httpResponse.Header {
 		for _, value := range values {
-			w.Header().Add(header, value)
+			c.Response().Header().Add(header, value)
 		}
 	}
-	w.WriteHeader(httpResponse.StatusCode)
+	c.Response().WriteHeader(httpResponse.StatusCode)
 
 	// [5]: Wait the HTTP response body is ready
 	// Get the HTTP Response body from the the peer
@@ -208,7 +207,7 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 
 	// [6]: Read the HTTP response body from the peer
 	// Pipe the HTTP response body right from the remote Proxy to the client
-	if _, err := io.Copy(w, responseBodyReader); err != nil {
+	if _, err := io.Copy(c.Response().Writer, responseBodyReader); err != nil {
 		close(responseBodyChannel)
 		return fmt.Errorf("unable to pipe response body : %w", err)
 	}

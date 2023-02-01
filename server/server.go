@@ -2,9 +2,9 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
-	"net/http"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -12,8 +12,9 @@ import (
 	"sync"
 	"time"
 
+	beaver "github.com/amalshaji/beaver"
 	"github.com/gorilla/websocket"
-	"github.com/root-gg/wsp"
+	"github.com/labstack/echo/v4"
 )
 
 // Server is a Reverse HTTP Proxy over WebSocket
@@ -43,8 +44,6 @@ type Server struct {
 	// "server" thread sends the value to this channel when accepting requests in the endpoint /requests,
 	// and "dispatcher" thread reads this channel.
 	dispatcher chan *ConnectionRequest
-
-	server *http.Server
 }
 
 // ConnectionRequest is used to request a proxy connection from the dispatcher
@@ -86,22 +85,23 @@ func (s *Server) Start() {
 		}
 	}()
 
-	r := http.NewServeMux()
-	// TODO: I want to detach the handler function from the Server struct,
-	// but it is tightly coupled to the internal state of the Server.
-	r.HandleFunc("/register", s.Register)
-	r.HandleFunc("/request", s.Request)
-	r.HandleFunc("/status", s.status)
+	e := echo.New()
+	e.GET("/register", s.Register)
+	e.GET("/status", s.status)
+
+	// Handle tunnel requests
+	e.GET("*", s.Request)
+	e.POST("*", s.Request)
+	e.PUT("*", s.Request)
+	e.PATCH("*", s.Request)
+	e.DELETE("*", s.Request)
+	e.OPTIONS("*", s.Request)
 
 	// Dispatch connection from available pools to clients requests
 	// in a separate thread from the server thread.
 	go s.dispatchConnections()
 
-	s.server = &http.Server{
-		Addr:    s.Config.GetAddr(),
-		Handler: r,
-	}
-	go func() { log.Fatal(s.server.ListenAndServe()) }()
+	go func() { log.Fatal(e.Start(s.Config.GetAddr())) }()
 }
 
 // clean removes empty Pools which has no connection.
@@ -197,26 +197,26 @@ func (s *Server) dispatchConnections() {
 	}
 }
 
-func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Request(c echo.Context) error {
 	// [1]: Receive requests to be proxied
 	// Parse destination URL
-	dstURL := r.Header.Get("X-PROXY-DESTINATION")
+	dstURL := fmt.Sprintf("http://localhost:5173/%s", c.Param("*"))
+	if c.QueryString() != "" {
+		dstURL = fmt.Sprintf("%s?%s", dstURL, c.QueryString())
+	}
 	if dstURL == "" {
-		wsp.ProxyErrorf(w, "Missing X-PROXY-DESTINATION header")
-		return
+		return beaver.ProxyErrorf(c, "Missing X-PROXY-DESTINATION header")
 	}
 	URL, err := url.Parse(dstURL)
 	if err != nil {
-		wsp.ProxyErrorf(w, "Unable to parse X-PROXY-DESTINATION header")
-		return
+		return beaver.ProxyErrorf(c, "Unable to parse X-PROXY-DESTINATION header")
 	}
-	r.URL = URL
+	c.Request().URL = URL
 
-	log.Printf("[%s] %s", r.Method, r.URL.String())
+	log.Printf("[%s] %s", c.Request().Method, c.Request().URL.String())
 
 	if len(s.pools) == 0 {
-		wsp.ProxyErrorf(w, "No proxy available")
-		return
+		return beaver.ProxyErrorf(c, "No proxy available")
 	}
 
 	// [2]: Take an WebSocket connection available from pools for relaying received requests.
@@ -236,44 +236,41 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 	if connection == nil {
 		// It means that dispatcher has set `nil` which is a system error case that is
 		// not expected in the normal flow.
-		wsp.ProxyErrorf(w, "Unable to get a proxy connection")
-		return
+		return beaver.ProxyErrorf(c, "Unable to get a proxy connection")
 	}
 
 	// [3]: Send the request to the peer through the WebSocket connection.
-	if err := connection.proxyRequest(w, r); err != nil {
+	if err := connection.proxyRequest(c); err != nil {
 		// An error occurred throw the connection away
 		log.Println(err)
 		connection.Close()
 
 		// Try to return an error to the client
 		// This might fail if response headers have already been sent
-		wsp.ProxyError(w, err)
+		return beaver.ProxyError(c, err)
 	}
+	return nil
 }
 
 // Request receives the WebSocket upgrade handshake request from wsp_client.
-func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Register(c echo.Context) error {
 	// 1. Upgrade a received HTTP request to a WebSocket connection
-	secretKey := r.Header.Get("X-SECRET-KEY")
+	secretKey := c.Request().Header.Get("X-SECRET-KEY")
 	if secretKey != s.Config.SecretKey {
-		wsp.ProxyErrorf(w, "Invalid X-SECRET-KEY")
-		return
+		return beaver.ProxyErrorf(c, "Invalid X-SECRET-KEY")
 	}
 
-	ws, err := s.upgrader.Upgrade(w, r, nil)
+	ws, err := s.upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
-		wsp.ProxyErrorf(w, "HTTP upgrade error : %v", err)
-		return
+		return beaver.ProxyErrorf(c, "HTTP upgrade error : %v", err)
 	}
 
 	// 2. Wait a greeting message from the peer and parse it
 	// The first message should contains the remote Proxy name and size
 	_, greeting, err := ws.ReadMessage()
 	if err != nil {
-		wsp.ProxyErrorf(w, "Unable to read greeting message : %s", err)
 		ws.Close()
-		return
+		return beaver.ProxyErrorf(c, "Unable to read greeting message : %s", err)
 	}
 
 	// Parse the greeting message
@@ -281,9 +278,8 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	id := PoolID(split[0])
 	size, err := strconv.Atoi(split[1])
 	if err != nil {
-		wsp.ProxyErrorf(w, "Unable to parse greeting message : %s", err)
 		ws.Close()
-		return
+		return beaver.ProxyErrorf(c, "Unable to parse greeting message : %s", err)
 	}
 
 	// 3. Register the connection into server pools.
@@ -309,10 +305,12 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
 	// Add the WebSocket connection to the pool
 	pool.Register(ws)
+
+	return nil
 }
 
-func (s *Server) status(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("ok"))
+func (s *Server) status(c echo.Context) error {
+	return c.JSON(200, map[string]string{"message": "ok"})
 }
 
 // Shutdown stop the Server

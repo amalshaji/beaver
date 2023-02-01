@@ -1,30 +1,27 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/root-gg/wsp/client"
+	"github.com/amalshaji/beaver/server"
 )
 
 func main() {
-	ctx := context.Background()
-
-	configFile := flag.String("config", "wsp_client.cfg", "config file path")
+	configFile := flag.String("config", "wsp_server.cfg", "config file path")
 	flag.Parse()
 
 	// Load configuration
-	config, err := client.LoadConfiguration(*configFile)
+	config, err := server.LoadConfiguration(*configFile)
 	if err != nil {
 		log.Fatalf("Unable to load configuration : %s", err)
 	}
 
-	proxy := client.NewClient(config)
-	proxy.Start(ctx)
+	server := server.NewServer(config)
+	server.Start()
 
 	// Wait signals
 	sigCh := make(chan os.Signal, 1)
@@ -32,5 +29,5 @@ func main() {
 	<-sigCh
 
 	// When receives the signal, shutdown
-	proxy.Shutdown()
+	server.Shutdown()
 }
