@@ -306,6 +306,7 @@ func (s *Server) Register(c echo.Context) error {
 	localServer := c.Request().Header.Get("X-LOCAL-SERVER")
 
 	secretKey := c.Request().Header.Get("X-SECRET-KEY")
+	greeting := c.Request().Header.Get("X-GREETING-MESSAGE")
 
 	var userIdentifier string
 	for _, user := range s.Config.Users {
@@ -318,25 +319,11 @@ func (s *Server) Register(c echo.Context) error {
 		return beaver.ProxyErrorf(c, "Invalid X-SECRET-KEY")
 	}
 
-	ws, err := s.upgrader.Upgrade(c.Response(), c.Request(), nil)
-	if err != nil {
-		return beaver.ProxyErrorf(c, "HTTP upgrade error : %v", err)
-	}
-
-	// 2. Wait a greeting message from the peer and parse it
-	// The first message should contains the remote Proxy name and size
-	_, greeting, err := ws.ReadMessage()
-	if err != nil {
-		ws.Close()
-		return beaver.ProxyErrorf(c, "Unable to read greeting message : %s", err)
-	}
-
 	// Parse the greeting message
 	split := strings.Split(string(greeting), "_")
 	id := PoolID(split[0])
 	size, err := strconv.Atoi(split[1])
 	if err != nil {
-		ws.Close()
 		return beaver.ProxyErrorf(c, "Unable to parse greeting message : %s", err)
 	}
 
@@ -355,8 +342,6 @@ func (s *Server) Register(c echo.Context) error {
 				pool = p
 				break
 			} else {
-				ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "subdomain already in use"))
-				ws.Close()
 				return beaver.ProxyErrorf(c, "subdomain already in use")
 			}
 		}
@@ -367,6 +352,11 @@ func (s *Server) Register(c echo.Context) error {
 	}
 	// update pool size
 	pool.size = size
+
+	ws, err := s.upgrader.Upgrade(c.Response(), c.Request(), nil)
+	if err != nil {
+		return beaver.ProxyErrorf(c, "HTTP upgrade error : %v", err)
+	}
 
 	// Add the WebSocket connection to the pool
 	pool.Register(ws)

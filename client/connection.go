@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -45,9 +46,17 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 		ctx,
 		connection.pool.target,
 		http.Header{
-			"X-SECRET-KEY":       {connection.pool.secretKey},
-			"X-TUNNEL-SUBDOMAIN": {connection.pool.subdomain},
-			"X-LOCAL-SERVER":     {fmt.Sprintf("http://localhost:%d", connection.pool.localPort)},
+			"X-SECRET-KEY":       {connection.pool.client.Config.SecretKey},
+			"X-TUNNEL-SUBDOMAIN": {connection.pool.client.Config.subdomain},
+			"X-LOCAL-SERVER": {fmt.Sprintf(
+				"http://localhost:%d",
+				connection.pool.client.Config.port,
+			)},
+			"X-GREETING-MESSAGE": {fmt.Sprintf(
+				"%s_%d",
+				connection.pool.client.Config.id,
+				connection.pool.client.Config.PoolIdleSize,
+			)},
 		},
 	)
 
@@ -59,17 +68,21 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 
 	log.Printf("Connected to %s", connection.pool.target)
 
-	// Send the greeting message with proxy id and wanted pool size.
-	greeting := fmt.Sprintf(
-		"%s_%d",
-		connection.pool.client.Config.id,
-		connection.pool.client.Config.PoolIdleSize,
-	)
-	if err := connection.ws.WriteMessage(websocket.TextMessage, []byte(greeting)); err != nil {
-		log.Println("greeting error :", err)
-		connection.Close()
-		return err
+	var httpScheme string
+
+	URL, _ := url.Parse(connection.pool.target)
+	if URL.Scheme == "ws" {
+		httpScheme = "http"
+	} else {
+		httpScheme = "https"
 	}
+	httpPort := URL.Port()
+	if httpPort != "" {
+		httpPort = ":" + httpPort
+	}
+	log.Printf("Tunnel running on %s://%s.%s%s", httpScheme, connection.pool.client.Config.subdomain, URL.Hostname(), httpPort)
+
+	// Send the greeting message with proxy id and wanted pool size.
 
 	go connection.serve(ctx)
 
