@@ -86,6 +86,8 @@ func (s *Server) Start() {
 	}()
 
 	e := echo.New()
+	e.HideBanner = true
+
 	e.GET("/register", s.Register)
 	e.GET("/status", s.status)
 
