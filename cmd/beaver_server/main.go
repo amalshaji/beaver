@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	configFile := flag.String("config", "wsp_server.cfg", "config file path")
+	configFile := flag.String("config", "beaver_server.yaml", "config file path")
 	flag.Parse()
 
 	// Load configuration
