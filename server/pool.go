@@ -10,10 +10,11 @@ import (
 
 // Pool handles all connections from the peer.
 type Pool struct {
-	server      *Server
-	id          PoolID
-	subdomain   string
-	localServer string
+	server         *Server
+	id             PoolID
+	subdomain      string
+	localServer    string
+	userIdentifier string
 
 	size int
 
@@ -28,12 +29,13 @@ type Pool struct {
 type PoolID string
 
 // NewPool creates a new Pool
-func NewPool(server *Server, id PoolID, subdomain, localServer string) *Pool {
+func NewPool(server *Server, id PoolID, subdomain, localServer, userIdentifier string) *Pool {
 	p := new(Pool)
 	p.server = server
 	p.id = id
 	p.subdomain = subdomain
 	p.localServer = localServer
+	p.userIdentifier = userIdentifier
 	p.idle = make(chan *Connection)
 	return p
 }
@@ -48,7 +50,7 @@ func (pool *Pool) Register(ws *websocket.Conn) {
 		return
 	}
 
-	log.Printf("Registering new connection from %s", pool.id)
+	log.Printf("Registering new connection from %s for user %s", pool.id, pool.userIdentifier)
 	connection := NewConnection(pool, ws)
 	pool.connections = append(pool.connections, connection)
 }

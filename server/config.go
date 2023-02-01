@@ -8,13 +8,18 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type UserConfig struct {
+	Identifier string
+	SecretKey  string
+}
+
 // Config configures an Server
 type Config struct {
 	Host        string
 	Port        int
 	Timeout     int
 	IdleTimeout int
-	SecretKey   string
+	Users       []UserConfig
 }
 
 // GetAddr returns the address to specify a HTTP server address

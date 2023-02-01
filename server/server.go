@@ -303,7 +303,15 @@ func (s *Server) Register(c echo.Context) error {
 	localServer := c.Request().Header.Get("X-LOCAL-SERVER")
 
 	secretKey := c.Request().Header.Get("X-SECRET-KEY")
-	if secretKey != s.Config.SecretKey {
+
+	var userIdentifier string
+	for _, user := range s.Config.Users {
+		if user.SecretKey == secretKey {
+			userIdentifier = user.Identifier
+		}
+	}
+
+	if userIdentifier == "" {
 		return beaver.ProxyErrorf(c, "Invalid X-SECRET-KEY")
 	}
 
@@ -351,7 +359,7 @@ func (s *Server) Register(c echo.Context) error {
 		}
 	}
 	if pool == nil {
-		pool = NewPool(s, id, subdomain, localServer)
+		pool = NewPool(s, id, subdomain, localServer, userIdentifier)
 		s.pools = append(s.pools, pool)
 	}
 	// update pool size
