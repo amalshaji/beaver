@@ -58,7 +58,7 @@ func LoadConfiguration(path, subdomain string, port int) (config *Config, err er
 	}
 
 	if subdomain == "" {
-		subdomain, err = gonanoid.New(6)
+		subdomain, err = gonanoid.Generate("abcdefghijklmnopqrstuvwxyz", 6)
 		if err != nil {
 			panic(err)
 		}
