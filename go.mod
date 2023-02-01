@@ -5,13 +5,13 @@ go 1.19
 require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/labstack/echo/v4 v4.10.0
+	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	gopkg.in/yaml.v2 v2.0.0-20160928153709-a5b47d31c556
 )
 
 require (
 	github.com/labstack/gommon v0.4.0 // indirect
-	github.com/matoous/go-nanoid/v2 v2.0.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
