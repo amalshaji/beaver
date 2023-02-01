@@ -61,6 +61,11 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 	)
 
 	if err != nil {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Fatal(err)
+			}
+		}()
 		bodyBytes, _ := io.ReadAll(res.Body)
 		defer res.Body.Close()
 		log.Fatal(string(bodyBytes))
