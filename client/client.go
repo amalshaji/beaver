@@ -21,7 +21,11 @@ type Client struct {
 func NewClient(config *Config) (c *Client) {
 	c = new(Client)
 	c.Config = config
-	c.client = &http.Client{}
+	c.client = &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 	c.dialer = &websocket.Dialer{}
 	c.pools = make(map[string]*Pool)
 	return
