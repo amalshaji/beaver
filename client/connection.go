@@ -29,6 +29,10 @@ type Connection struct {
 	status int
 }
 
+func (c *Connection) IsInitialConnection() bool {
+	return len(c.pool.connections) == 1
+}
+
 // NewConnection create a Connection object
 func NewConnection(pool *Pool) *Connection {
 	c := new(Connection)
@@ -39,7 +43,10 @@ func NewConnection(pool *Pool) *Connection {
 
 // Connect to the IsolatorServer using a HTTP websocket
 func (connection *Connection) Connect(ctx context.Context) (err error) {
-	log.Printf("Connecting to %s", connection.pool.target)
+	if connection.IsInitialConnection() {
+		log.Println("Creating tunnel connection")
+	}
+
 	var res *http.Response
 	// Create a new TCP(/TLS) connection ( no use of net.http )
 	connection.ws, res, err = connection.pool.client.dialer.DialContext(
@@ -71,8 +78,6 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 		log.Fatal(string(bodyBytes))
 	}
 
-	log.Printf("Connected to %s", connection.pool.target)
-
 	var httpScheme string
 
 	URL, _ := url.Parse(connection.pool.target)
@@ -85,7 +90,15 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 	if httpPort != "" {
 		httpPort = ":" + httpPort
 	}
-	log.Printf("Tunnel running on %s://%s.%s%s", httpScheme, connection.pool.client.Config.subdomain, URL.Hostname(), httpPort)
+
+	if connection.IsInitialConnection() {
+		log.Printf("Tunnel running on %s://%s.%s%s",
+			httpScheme,
+			connection.pool.client.Config.subdomain,
+			URL.Hostname(),
+			httpPort,
+		)
+	}
 
 	// Send the greeting message with proxy id and wanted pool size.
 

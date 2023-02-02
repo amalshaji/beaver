@@ -246,7 +246,7 @@ func (s *Server) Request(c echo.Context) error {
 	}
 
 	dstURL = fmt.Sprintf("%s/%s", dstURL, c.Param("*"))
-	fmt.Println(dstURL)
+
 	if c.QueryString() != "" {
 		dstURL = fmt.Sprintf("%s?%s", dstURL, c.QueryString())
 	}
