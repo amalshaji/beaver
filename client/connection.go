@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -133,7 +134,11 @@ func (connection *Connection) serve(ctx context.Context) {
 		connection.status = IDLE
 		_, jsonRequest, err := connection.ws.ReadMessage()
 		if err != nil {
-			log.Println("Unable to read request", err)
+			// This is not the best way to not log error during websocket closure
+			// Get rid of it, if suppressing useful messages
+			if !strings.HasSuffix(err.Error(), "use of closed network connection") {
+				log.Println("Unable to read request", err)
+			}
 			break
 		}
 
