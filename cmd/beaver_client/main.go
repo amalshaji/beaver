@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -10,24 +9,33 @@ import (
 	"syscall"
 
 	"github.com/amalshaji/beaver/client"
+	flag "github.com/spf13/pflag"
 )
+
+func getDefaultConfigFilePath() string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%s/.beaver/beaver_client.yaml", homeDir)
+}
 
 func main() {
 	ctx := context.Background()
 
-	configFile := flag.String("config", "", "config file path")
-	subdomain := flag.String("subdomain", "", "subdomain to create the tunnel at")
-	port := flag.Int("port", 0, "local server port to tunnel")
+	configFile := flag.String("config", getDefaultConfigFilePath(), "Config file path")
+	subdomain := flag.String("subdomain", "", "Subdomain to tunnel http requests (default \"<random_subdomain>\")")
+	port := flag.Int("port", 0, "Local http server port (required)")
+
+	flag.CommandLine.SortFlags = false
+	flag.ErrHelp = fmt.Errorf("")
+
+	flag.Usage = func() {
+		fmt.Fprint(os.Stderr, "beaver - tunnel local ports to public URLs:\n\nUsage:\n")
+		flag.PrintDefaults()
+	}
 
 	flag.Parse()
-
-	if *configFile == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			panic(err)
-		}
-		*configFile = fmt.Sprintf("%s/.beaver/beaver_client.yaml", homeDir)
-	}
 
 	if *port == 0 {
 		log.Fatalln("local server port is required")

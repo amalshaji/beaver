@@ -12,3 +12,5 @@ test_api/test_api
 # IntelliJ IDEA
 .idea
 .DS_Store
+beaver
+beaver_server
