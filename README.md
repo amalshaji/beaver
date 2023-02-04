@@ -2,7 +2,7 @@
 
 <img src="docs/beaver.png" height="250px">
 
-## Client Setup
+## Client
 
 Download the binary from releases or build from source. Refer `Makefile` for client build command. You may have to build for your architecture.
 
@@ -25,9 +25,11 @@ poolmaxsize : 100         # Maximum number of concurrent open (TCP) connections 
 secretkey : ThisIsASecret # Users secret key set in the server config
 ```
 
-## Server Setup
+## Server
 
-Download the server binary from the releases or use the docker image provided.
+```bash
+docker pull amalshaji/beaver:latest
+```
 
 ### Config file for server
 
