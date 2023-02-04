@@ -7,7 +7,7 @@ import (
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	uuid "github.com/nu7hatch/gouuid"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Config configures an Proxy

@@ -8,7 +8,7 @@ require (
 	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/spf13/pflag v1.0.5
-	gopkg.in/yaml.v2 v2.0.0-20160928153709-a5b47d31c556
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
