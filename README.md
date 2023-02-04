@@ -1,23 +1,19 @@
 # Beaver
 
-Checkout WSP docs [here](https://github.com/hgsgtk/wsp/blob/main/README.md)
+<img src="docs/beaver.png" height="250px">
 
 ## Client Setup
 
 Download the binary from releases or build from source. Refer `Makefile` for client build command. You may have to build for your architecture.
 
 ```bash
-Usage of beaver:
-  -config string
-        config file path
-  -port int
-        local server port to tunnel
-  -subdomain string
-        subdomain to create the tunnel at
-```
+beaver - tunnel local ports to public URLs:
 
-- config: defaults to `$HOME/.beaver/beaver_client.yaml`
-- subdomain: Defaults to 6 digit random subdomain
+Usage:
+      --config string      Config file path (default "/Users/amalshaji/.beaver/beaver_client.yaml")
+      --subdomain string   Subdomain to tunnel http requests (default "<random_subdomain>")
+      --port int           Local http server port (required)
+```
 
 ### Config file for client
 
@@ -46,3 +42,7 @@ users:                       # User specific secret keys
   - identifier: max@xam.com
     secretkey: ThisIsASecret@2
 ```
+
+## Credits
+
+This project is a fork of [hgsgtk/wsp](https://github.com/hgsgtk/wsp)
