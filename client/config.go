@@ -12,9 +12,11 @@ import (
 
 // Config configures an Proxy
 type Config struct {
-	id           string
-	subdomain    string
-	port         int
+	id               string
+	subdomain        string
+	port             int
+	showWsReadErrors bool
+
 	Targets      []string
 	PoolIdleSize int
 	PoolMaxSize  int
@@ -39,7 +41,7 @@ func NewConfig() (config *Config) {
 }
 
 // LoadConfiguration loads configuration from a YAML file
-func LoadConfiguration(path, subdomain string, port int) (config *Config, err error) {
+func LoadConfiguration(path, subdomain string, port int, showWsReadErrors bool) (config *Config, err error) {
 	config = NewConfig()
 
 	bytes, err := os.ReadFile(path)
@@ -65,6 +67,7 @@ func LoadConfiguration(path, subdomain string, port int) (config *Config, err er
 	}
 	config.subdomain = subdomain
 	config.port = port
+	config.showWsReadErrors = showWsReadErrors
 
 	return
 }

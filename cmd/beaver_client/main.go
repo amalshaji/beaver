@@ -26,6 +26,9 @@ func main() {
 	configFile := flag.String("config", getDefaultConfigFilePath(), "Config file path")
 	subdomain := flag.String("subdomain", "", "Subdomain to tunnel http requests (default \"<random_subdomain>\")")
 	port := flag.Int("port", 0, "Local http server port (required)")
+	showWsReadErrors := flag.Bool("showtunnelreaderrors", false, "Enable websocket read errors")
+
+	flag.CommandLine.MarkHidden("showtunnelreaderrors")
 
 	flag.CommandLine.SortFlags = false
 	flag.ErrHelp = fmt.Errorf("")
@@ -42,7 +45,7 @@ func main() {
 	}
 
 	// Load configuration
-	config, err := client.LoadConfiguration(*configFile, *subdomain, *port)
+	config, err := client.LoadConfiguration(*configFile, *subdomain, *port, *showWsReadErrors)
 	if err != nil {
 		log.Fatalf("Unable to load configuration : %s", err)
 	}

@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -134,9 +133,7 @@ func (connection *Connection) serve(ctx context.Context) {
 		connection.status = IDLE
 		_, jsonRequest, err := connection.ws.ReadMessage()
 		if err != nil {
-			// This is not the best way to not log error during websocket closure
-			// Get rid of it, if suppressing useful messages
-			if !strings.HasSuffix(err.Error(), "use of closed network connection") {
+			if connection.pool.client.Config.showWsReadErrors {
 				log.Println("Unable to read request", err)
 			}
 			break
@@ -161,8 +158,6 @@ func (connection *Connection) serve(ctx context.Context) {
 			break
 		}
 
-		log.Printf("[%s] %s", req.Method, req.URL.String())
-
 		// Pipe request body
 		_, bodyReader, err := connection.ws.NextReader()
 		if err != nil {
@@ -180,6 +175,14 @@ func (connection *Connection) serve(ctx context.Context) {
 			}
 			continue
 		}
+
+		var urlPath string = req.URL.Path
+
+		if req.URL.RawQuery != "" {
+			urlPath = urlPath + "?" + req.URL.RawQuery
+		}
+
+		log.Printf("[%s] %d %s", req.Method, resp.StatusCode, urlPath)
 
 		// Serialize response
 		jsonResponse, err := json.Marshal(beaver.SerializeHTTPResponse(resp))
