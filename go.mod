@@ -1,9 +1,9 @@
 module github.com/amalshaji/beaver
 
-go 1.20
+go 1.19
 
 require (
-	github.com/gorilla/websocket v1.4.2
+	github.com/gorilla/websocket v1.5.0
 	github.com/labstack/echo/v4 v4.10.0
 	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
