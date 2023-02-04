@@ -1,8 +1,6 @@
 # Beaver
 
-![beaver](docs/beaver.png)
-
-> This project is a fork of [hgsgtk/wsp](https://github.com/hgsgtk/wsp)
+![beaver](docs/beaver.png =250x250)
 
 ## Client Setup
 
@@ -44,3 +42,7 @@ users:                       # User specific secret keys
   - identifier: max@xam.com
     secretkey: ThisIsASecret@2
 ```
+
+## Credits
+
+This project is a fork of [hgsgtk/wsp](https://github.com/hgsgtk/wsp)
