@@ -1,6 +1,6 @@
 # Beaver
 
-<img src="docs/beaver.png" height="250px" style="display: block; margin-left: auto; margin-right: auto;">
+<img src="docs/beaver.png" height="250px">
 
 ## Client Setup
 
