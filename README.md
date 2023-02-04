@@ -1,6 +1,6 @@
 # Beaver
 
-![beaver](docs/beaver.png =250x250)
+<img src="docs/beaver.png" height="250px">
 
 ## Client Setup
 
