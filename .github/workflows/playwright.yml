@@ -23,12 +23,24 @@ jobs:
     - name: Add hosts to /etc/hosts
       run: |
           sudo echo "127.0.0.1 test.localhost" | sudo tee -a /etc/hosts
-    - name: Start test dependencies
+    - name: Build client and server
       run: |
-          make start-test-servers
+          go build -ldflags="-s -w" -o beaver ./cmd/beaver_client
+          go build -ldflags="-s -w" -o beaver_server ./cmd/beaver_server
+          go build -ldflags="-s -w" -o test_server ./e2e/server.go
+    - name: Start test servers
+      run: |
+          ./test_server &
+          sleep 5
+          ./beaver_server --config docs/beaver_server.yaml &
+          sleep 5
+    - name: Start test client
+      run: |
+          ./beaver_client --config docs/beaver_client.yaml --port 9999 --subdomain test &
+          sleep 3
     - name: Run Playwright tests
       run: pnpm dlx playwright test
-    - name: Kill test dependencies
+    - name: Kill test servers
       run: |
           make kill-test-servers
     - uses: actions/upload-artifact@v3
