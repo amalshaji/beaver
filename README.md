@@ -4,7 +4,7 @@
 
 ## Client
 
-Download the binary from releases or build from source. Refer `Makefile` for client build command. You may have to build for your architecture.
+Download the binary from [releases page](https://github.com/amalshaji/beaver/releases).
 
 ```bash
 beaver - tunnel local ports to public URLs:
@@ -15,7 +15,7 @@ Usage:
       --port int           Local http server port (required)
 ```
 
-### Config file for client
+### Config
 
 ```yaml
 targets :                 # Beaver server url (eg: wss://tunnel.example.com)
@@ -27,11 +27,9 @@ secretkey : ThisIsASecret # Users secret key set in the server config
 
 ## Server
 
-```bash
-docker pull amalshaji/beaver:latest
-```
+Download the binary from [releases page](https://github.com/amalshaji/beaver/releases), or use the [docker image](https://hub.docker.com/r/amalshaji/beaver)
 
-### Config file for server
+### Config
 
 ```yaml
 host : 127.0.0.1             # Address to bind the HTTP server
@@ -48,3 +46,7 @@ users:                       # User specific secret keys
 ## Credits
 
 This project is a fork of [hgsgtk/wsp](https://github.com/hgsgtk/wsp)
+
+
+## Checkout [wiki](https://github.com/amalshaji/beaver/wiki) for examples and tutorials
+
