@@ -9,6 +9,18 @@ build-server-image:
 build-client:
 	go build -ldflags="-s -w" -o beaver ./cmd/beaver_client
 
-run-test-server:
-	go run ./examples/test_api/main.go
+start-test-servers:
+	@echo "Starting test server"
+	@go run e2e/server.go &
+	@sleep 3	
+	@echo "Starting beaver server"
+	@go run cmd/beaver_server/main.go --config docs/beaver_server.yaml &
+	@sleep 3
+	@echo "Starting beaver client"
+	@go run cmd/beaver_client/main.go --config docs/beaver_client.yaml --port 9999 --subdomain test &
 
+kill-test-servers:
+	@echo "Killing test server"
+	@lsof -t -i:9999 | xargs kill -9
+	@echo "Killing beaver server"
+	@lsof -t -i:8080 | xargs kill -9
