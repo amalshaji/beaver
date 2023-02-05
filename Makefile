@@ -12,12 +12,13 @@ build-client:
 start-test-servers:
 	@echo "Starting test server"
 	@go run e2e/server.go &
-	@sleep 3	
+	@sleep 5	
 	@echo "Starting beaver server"
 	@go run cmd/beaver_server/main.go --config docs/beaver_server.yaml &
-	@sleep 3
+	@sleep 5
 	@echo "Starting beaver client"
 	@go run cmd/beaver_client/main.go --config docs/beaver_client.yaml --port 9999 --subdomain test &
+	@sleep 5
 
 kill-test-servers:
 	@echo "Killing test server"
