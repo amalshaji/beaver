@@ -14,3 +14,7 @@ test_api/test_api
 .DS_Store
 beaver
 beaver_server
+node_modules
+/test-results/
+/playwright-report/
+/playwright/.cache/
