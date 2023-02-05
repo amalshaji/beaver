@@ -18,4 +18,6 @@ RUN apk add libc6-compat=1.2.3-r4 --no-cache && rm -rf /var/cache/apk/*
 
 COPY --from=builder /app/beaver_server /app/
 
-ENTRYPOINT ["./beaver_server"]
+VOLUME [ "/app/config" ]
+
+ENTRYPOINT ["./beaver_server", "--config", "/app/config/beaver_server.yaml"]
