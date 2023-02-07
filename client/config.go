@@ -2,60 +2,58 @@ package client
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	uuid "github.com/nu7hatch/gouuid"
-	"gopkg.in/yaml.v3"
 )
 
-// Config configures an Proxy
-type Config struct {
-	id               string
-	subdomain        string
-	port             int
-	showWsReadErrors bool
+type TunnelConfig struct {
+	Subdomain string
+	Port      int
+}
 
+type Config struct {
 	Targets      []string
 	PoolIdleSize int
 	PoolMaxSize  int
 	SecretKey    string
 }
 
-// NewConfig creates a new ProxyConfig
-func NewConfig() (config *Config) {
-	config = new(Config)
+// Proxy configures an Proxy
+type Proxy struct {
+	id               string
+	subdomain        string
+	port             int
+	showWsReadErrors bool
 
+	Config  Config
+	Tunnels []TunnelConfig
+}
+
+// NewConfig creates a new ProxyConfig
+func (config *Proxy) setDefaults() {
 	id, err := uuid.NewV4()
 	if err != nil {
 		panic(err)
 	}
 	config.id = id.String()
 
-	config.Targets = []string{"wss://t.amal.sh"}
-	config.PoolIdleSize = 1
-	config.PoolMaxSize = 100
+	config.Config.Targets = []string{"wss://x.amal.sh"}
+	config.Config.PoolIdleSize = 1
+	config.Config.PoolMaxSize = 100
 
-	return
 }
 
 // LoadConfiguration loads configuration from a YAML file
-func LoadConfiguration(path, subdomain string, port int, showWsReadErrors bool) (config *Config, err error) {
-	config = NewConfig()
+func LoadConfiguration(config Proxy, subdomain string, port int, showWsReadErrors bool) (Proxy, error) {
+	var err error
 
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return
-	}
+	config.setDefaults()
 
-	err = yaml.Unmarshal(bytes, config)
-	if err != nil {
-		return
-	}
-	for i, v := range config.Targets {
+	for i, v := range config.Config.Targets {
 		if !strings.HasSuffix(v, "/register") {
-			config.Targets[i] = fmt.Sprintf("%s/register", v)
+			config.Config.Targets[i] = fmt.Sprintf("%s/register", v)
 		}
 	}
 
@@ -69,5 +67,7 @@ func LoadConfiguration(path, subdomain string, port int, showWsReadErrors bool) 
 	config.port = port
 	config.showWsReadErrors = showWsReadErrors
 
-	return
+	config.Tunnels = make([]TunnelConfig, 0)
+
+	return config, nil
 }

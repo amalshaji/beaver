@@ -56,7 +56,7 @@ func (pool *Pool) connector(ctx context.Context) {
 	poolSize := pool.Size()
 
 	// Create enough connection to fill the pool
-	toCreate := pool.client.Config.PoolIdleSize - poolSize.idle
+	toCreate := pool.client.Proxy.Config.PoolIdleSize - poolSize.idle
 
 	// Create only one connection if the pool is empty
 	if poolSize.total == 0 {
@@ -64,14 +64,14 @@ func (pool *Pool) connector(ctx context.Context) {
 	}
 
 	// Ensure to open at most PoolMaxSize connections
-	if poolSize.total+toCreate > pool.client.Config.PoolMaxSize {
-		toCreate = pool.client.Config.PoolMaxSize - poolSize.total
+	if poolSize.total+toCreate > pool.client.Proxy.Config.PoolMaxSize {
+		toCreate = pool.client.Proxy.Config.PoolMaxSize - poolSize.total
 	}
 
 	// Try to reach ideal pool size
 	for i := 0; i < toCreate; i++ {
 		conn := NewConnection(pool)
-		pool.connections = append(pool.connections, conn)
+		pool.add(conn)
 
 		go func() {
 			err := conn.Connect(ctx)

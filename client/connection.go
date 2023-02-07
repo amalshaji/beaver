@@ -53,16 +53,16 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 		ctx,
 		connection.pool.target,
 		http.Header{
-			"X-SECRET-KEY":       {connection.pool.client.Config.SecretKey},
-			"X-TUNNEL-SUBDOMAIN": {connection.pool.client.Config.subdomain},
+			"X-SECRET-KEY":       {connection.pool.client.Proxy.Config.SecretKey},
+			"X-TUNNEL-SUBDOMAIN": {connection.pool.client.Proxy.subdomain},
 			"X-LOCAL-SERVER": {fmt.Sprintf(
 				"http://localhost:%d",
-				connection.pool.client.Config.port,
+				connection.pool.client.Proxy.port,
 			)},
 			"X-GREETING-MESSAGE": {fmt.Sprintf(
 				"%s_%d",
-				connection.pool.client.Config.id,
-				connection.pool.client.Config.PoolIdleSize,
+				connection.pool.client.Proxy.id,
+				connection.pool.client.Proxy.Config.PoolIdleSize,
 			)},
 		},
 	)
@@ -94,7 +94,7 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 	if connection.IsInitialConnection() {
 		log.Printf("Tunnel running on %s://%s.%s%s",
 			httpScheme,
-			connection.pool.client.Config.subdomain,
+			connection.pool.client.Proxy.subdomain,
 			URL.Hostname(),
 			httpPort,
 		)
@@ -133,7 +133,7 @@ func (connection *Connection) serve(ctx context.Context) {
 		connection.status = IDLE
 		_, jsonRequest, err := connection.ws.ReadMessage()
 		if err != nil {
-			if connection.pool.client.Config.showWsReadErrors {
+			if connection.pool.client.Proxy.showWsReadErrors {
 				log.Println("Unable to read request", err)
 			}
 			break
@@ -182,7 +182,11 @@ func (connection *Connection) serve(ctx context.Context) {
 			urlPath = urlPath + "?" + req.URL.RawQuery
 		}
 
-		log.Printf("[%s] %d %s", req.Method, resp.StatusCode, urlPath)
+		log.Printf("[%d] [%s] %d %s",
+			connection.pool.client.Proxy.port,
+			req.Method,
+			resp.StatusCode,
+			urlPath)
 
 		// Serialize response
 		jsonResponse, err := json.Marshal(beaver.SerializeHTTPResponse(resp))
