@@ -31,17 +31,22 @@ type Proxy struct {
 	Tunnels []TunnelConfig
 }
 
-// NewConfig creates a new ProxyConfig
-func (config *Proxy) setDefaults() {
+func (proxy *Proxy) setDefaults() {
 	id, err := uuid.NewV4()
 	if err != nil {
 		panic(err)
 	}
-	config.id = id.String()
+	proxy.id = id.String()
 
-	config.Config.Targets = []string{"wss://x.amal.sh"}
-	config.Config.PoolIdleSize = 1
-	config.Config.PoolMaxSize = 100
+	if len(proxy.Config.Targets) == 0 {
+		proxy.Config.Targets = []string{"wss://x.amal.sh"}
+	}
+	if proxy.Config.PoolIdleSize == 0 {
+		proxy.Config.PoolIdleSize = 1
+	}
+	if proxy.Config.PoolMaxSize == 0 {
+		proxy.Config.PoolMaxSize = 100
+	}
 
 }
 
