@@ -2,6 +2,9 @@
 
 <img src="docs/beaver.png" height="250px">
 
+> **Warning**
+> This project is in a very early stage, may introduce breaking changes
+
 ## Client
 
 Download the binary from [releases page](https://github.com/amalshaji/beaver/releases).
