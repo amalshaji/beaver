@@ -34,7 +34,7 @@ func NewClient(config *Config) (c *Client) {
 // Start the Proxy
 func (c *Client) Start(ctx context.Context) {
 	pool := NewPool(c, c.Config.Target)
-	c.pools[c.Config.Target] = pool
+	c.pools[c.Config.id] = pool
 	go pool.Start(ctx)
 }
 
