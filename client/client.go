@@ -10,7 +10,7 @@ import (
 // Client connects to one or more Server using HTTP websockets.
 // The Server can then send HTTP requests to execute.
 type Client struct {
-	Proxy *Proxy
+	Config *Config
 
 	client *http.Client
 	dialer *websocket.Dialer
@@ -18,9 +18,9 @@ type Client struct {
 }
 
 // NewClient creates a new Client.
-func NewClient(config *Proxy) (c *Client) {
+func NewClient(config *Config) (c *Client) {
 	c = new(Client)
-	c.Proxy = config
+	c.Config = config
 	c.client = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -33,11 +33,9 @@ func NewClient(config *Proxy) (c *Client) {
 
 // Start the Proxy
 func (c *Client) Start(ctx context.Context) {
-	for _, target := range c.Proxy.Config.Targets {
-		pool := NewPool(c, target)
-		c.pools[target] = pool
-		go pool.Start(ctx)
-	}
+	pool := NewPool(c, c.Config.Target)
+	c.pools[c.Config.Target] = pool
+	go pool.Start(ctx)
 }
 
 // Shutdown the Proxy

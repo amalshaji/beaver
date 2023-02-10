@@ -21,8 +21,8 @@ func getDefaultConfigFilePath() string {
 	return fmt.Sprintf("%s/.beaver/beaver_client.yaml", homeDir)
 }
 
-func loadProxyConfig(path string) (*client.Proxy, error) {
-	var config client.Proxy
+func loadProxyConfig(path string) (*client.Config, error) {
+	var config *client.Config
 
 	bytes, err := os.ReadFile(path)
 	if err != nil {
@@ -33,7 +33,21 @@ func loadProxyConfig(path string) (*client.Proxy, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &config, nil
+	return config, nil
+}
+func loadProxyTunnelConfig(path string) (*client.ProxyTunnels, error) {
+	var config *client.ProxyTunnels
+
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	err = yaml.Unmarshal(bytes, &config)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
 }
 
 func main() {
@@ -58,6 +72,7 @@ func main() {
 	flag.Parse()
 
 	var proxies []*client.Client
+	var tunnels *client.ProxyTunnels
 
 	proxyConfig, err := loadProxyConfig(*configFile)
 	if err != nil {
@@ -65,20 +80,26 @@ func main() {
 	}
 
 	if *startAll {
-		if len(proxyConfig.Tunnels) == 0 {
+		var err error
+		tunnels, err = loadProxyTunnelConfig(*configFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if len(tunnels.Tunnels) == 0 {
 			log.Fatal("No tunnels defined in the config file")
 		}
 	} else {
 		if *port == 0 {
 			log.Fatalln("local server port is required")
 		}
-		if len(proxyConfig.Tunnels) != 0 {
-			proxyConfig.Tunnels = []client.TunnelConfig{{Subdomain: *subdomain, Port: *port}}
+
+		if len(tunnels.Tunnels) != 0 {
+			tunnels.Tunnels = []client.TunnelConfig{{Subdomain: *subdomain, Port: *port}}
 		}
 	}
 
-	for _, tunnel := range proxyConfig.Tunnels {
-		config, err := client.LoadConfiguration(*proxyConfig, tunnel.Subdomain, tunnel.Port, *showWsReadErrors)
+	for _, proxyTunnel := range tunnels.Tunnels {
+		config, err := client.LoadConfiguration(*proxyConfig, proxyTunnel.Subdomain, proxyTunnel.Port, *showWsReadErrors)
 		if err != nil {
 			log.Fatalf("Unable to load configuration : %s", err)
 		}

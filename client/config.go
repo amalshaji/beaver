@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"strings"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -9,57 +8,56 @@ import (
 )
 
 type TunnelConfig struct {
+	Name      string
 	Subdomain string
 	Port      int
 }
 
-type Config struct {
-	Targets      []string
-	PoolIdleSize int
-	PoolMaxSize  int
-	SecretKey    string
+type ProxyTunnels struct {
+	Tunnels []TunnelConfig
 }
 
-// Proxy configures an Proxy
-type Proxy struct {
+type Config struct {
 	id               string
 	subdomain        string
 	port             int
 	showWsReadErrors bool
 
-	Config  Config
-	Tunnels []TunnelConfig
+	Target       string `yaml:"target"`
+	PoolIdleSize int
+	PoolMaxSize  int
+	SecretKey    string
 }
 
-func (proxy *Proxy) setDefaults() {
+// ProxyConfig configures an ProxyConfig
+
+func (config *Config) setDefaults() {
 	id, err := uuid.NewV4()
 	if err != nil {
 		panic(err)
 	}
-	proxy.id = id.String()
+	config.id = id.String()
 
-	if len(proxy.Config.Targets) == 0 {
-		proxy.Config.Targets = []string{"wss://x.amal.sh"}
+	if config.Target == "" {
+		config.Target = "wss://x.amal.sh"
 	}
-	if proxy.Config.PoolIdleSize == 0 {
-		proxy.Config.PoolIdleSize = 1
+	if config.PoolIdleSize == 0 {
+		config.PoolIdleSize = 1
 	}
-	if proxy.Config.PoolMaxSize == 0 {
-		proxy.Config.PoolMaxSize = 100
+	if config.PoolMaxSize == 0 {
+		config.PoolMaxSize = 100
 	}
 
 }
 
 // LoadConfiguration loads configuration from a YAML file
-func LoadConfiguration(config Proxy, subdomain string, port int, showWsReadErrors bool) (Proxy, error) {
+func LoadConfiguration(config Config, subdomain string, port int, showWsReadErrors bool) (Config, error) {
 	var err error
 
 	config.setDefaults()
 
-	for i, v := range config.Config.Targets {
-		if !strings.HasSuffix(v, "/register") {
-			config.Config.Targets[i] = fmt.Sprintf("%s/register", v)
-		}
+	if !strings.HasSuffix(config.Target, "/register") {
+		config.Target = config.Target + "/register"
 	}
 
 	if subdomain == "" {
@@ -71,8 +69,6 @@ func LoadConfiguration(config Proxy, subdomain string, port int, showWsReadError
 	config.subdomain = subdomain
 	config.port = port
 	config.showWsReadErrors = showWsReadErrors
-
-	config.Tunnels = make([]TunnelConfig, 0)
 
 	return config, nil
 }
