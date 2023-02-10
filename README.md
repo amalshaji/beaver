@@ -10,12 +10,48 @@
 Download the binary from [releases page](https://github.com/amalshaji/beaver/releases).
 
 ```bash
-beaver - tunnel local ports to public URLs:
+➜  beaver --help
+Tunnel local ports to public URLs
 
 Usage:
-      --config string      Config file path (default "/Users/amalshaji/.beaver/beaver_client.yaml")
+  beaver [flags]
+  beaver [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  http        Tunnel local http servers
+  start       Start tunnels defined in the config file
+
+Flags:
+      --config string   Path to the client config file (default "/Users/amalshaji/.beaver/beaver_client.yaml")
+  -h, --help            help for beaver
+
+Use "beaver [command] --help" for more information about a command.
+
+---
+
+➜  beaver http --help
+Tunnel local http servers
+
+Usage:
+  beaver http [PORT] [flags]
+
+Flags:
+  -h, --help               help for http
       --subdomain string   Subdomain to tunnel http requests (default "<random_subdomain>")
-      --port int           Local http server port (required)
+
+---
+
+➜  beaver start --help
+Start tunnels defined in the config file
+
+Usage:
+  beaver start [--all] or [tunnel1 tunnel2] [flags]
+
+Flags:
+      --all    Start all tunnels listed in the config
+  -h, --help   help for start
 ```
 
 #### Example
@@ -26,7 +62,7 @@ Usage:
 2023/02/05 19:46:07 Tunnel running on https://sccrej.tunnel.example.com
 ```
 
-Now, `https://sccrej.tunnel.example.com ⇄ http://localhost:8000`
+Now, `https://sccrej.tunnel.example.com -> http://localhost:8000`
 
 #### Config
 

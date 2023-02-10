@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -10,12 +9,9 @@ import (
 	"github.com/amalshaji/beaver/server"
 )
 
-func main() {
-	configFile := flag.String("config", "beaver_server.yaml", "config file path")
-	flag.Parse()
-
+func startServer() {
 	// Load configuration
-	config, err := server.LoadConfiguration(*configFile)
+	config, err := server.LoadConfiguration(configFile)
 	if err != nil {
 		log.Fatalf("Unable to load configuration : %s", err)
 	}
@@ -30,4 +26,10 @@ func main() {
 
 	// When receives the signal, shutdown
 	server.Shutdown()
+}
+
+func main() {
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
 }

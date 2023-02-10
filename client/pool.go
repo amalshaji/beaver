@@ -71,7 +71,7 @@ func (pool *Pool) connector(ctx context.Context) {
 	// Try to reach ideal pool size
 	for i := 0; i < toCreate; i++ {
 		conn := NewConnection(pool)
-		pool.connections = append(pool.connections, conn)
+		pool.add(conn)
 
 		go func() {
 			err := conn.Connect(ctx)

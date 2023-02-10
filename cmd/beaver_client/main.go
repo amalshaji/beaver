@@ -2,56 +2,27 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/amalshaji/beaver/client"
-	flag "github.com/spf13/pflag"
 )
 
-func getDefaultConfigFilePath() string {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-	return fmt.Sprintf("%s/.beaver/beaver_client.yaml", homeDir)
-}
-
-func main() {
+func startTunnels(tunnels []client.TunnelConfig) {
 	ctx := context.Background()
+	var proxies []*client.Client
 
-	configFile := flag.String("config", getDefaultConfigFilePath(), "Config file path")
-	subdomain := flag.String("subdomain", "", "Subdomain to tunnel http requests (default \"<random_subdomain>\")")
-	port := flag.Int("port", 0, "Local http server port (required)")
-	showWsReadErrors := flag.Bool("showtunnelreaderrors", false, "Enable websocket read errors")
-
-	flag.CommandLine.MarkHidden("showtunnelreaderrors")
-
-	flag.CommandLine.SortFlags = false
-	flag.ErrHelp = fmt.Errorf("")
-
-	flag.Usage = func() {
-		fmt.Fprint(os.Stderr, "beaver - tunnel local ports to public URLs:\n\nUsage:\n")
-		flag.PrintDefaults()
+	for _, proxyTunnel := range tunnels {
+		config, err := client.LoadConfiguration(configFile, proxyTunnel.Subdomain, proxyTunnel.Port, showWsReadErrors)
+		if err != nil {
+			log.Fatalf("Unable to load configuration : %s", err)
+		}
+		proxy := client.NewClient(&config)
+		proxies = append(proxies, proxy)
+		proxy.Start(ctx)
 	}
-
-	flag.Parse()
-
-	if *port == 0 {
-		log.Fatalln("local server port is required")
-	}
-
-	// Load configuration
-	config, err := client.LoadConfiguration(*configFile, *subdomain, *port, *showWsReadErrors)
-	if err != nil {
-		log.Fatalf("Unable to load configuration : %s", err)
-	}
-
-	proxy := client.NewClient(config)
-	proxy.Start(ctx)
 
 	// Wait signals
 	sigCh := make(chan os.Signal, 1)
@@ -59,5 +30,13 @@ func main() {
 	<-sigCh
 
 	// When receives the signal, shutdown
-	proxy.Shutdown()
+	for _, proxy := range proxies {
+		proxy.Shutdown()
+	}
+}
+
+func main() {
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
 }

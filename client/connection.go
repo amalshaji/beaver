@@ -44,7 +44,7 @@ func NewConnection(pool *Pool) *Connection {
 // Connect to the IsolatorServer using a HTTP websocket
 func (connection *Connection) Connect(ctx context.Context) (err error) {
 	if connection.IsInitialConnection() {
-		log.Println("Creating tunnel connection")
+		log.Printf("Creating tunnel connection for :%d", connection.pool.client.Config.port)
 	}
 
 	var res *http.Response
@@ -92,11 +92,12 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 	}
 
 	if connection.IsInitialConnection() {
-		log.Printf("Tunnel running on %s://%s.%s%s",
+		log.Printf("Tunnel connected %s://%s.%s%s -> http://localhost:%d",
 			httpScheme,
 			connection.pool.client.Config.subdomain,
 			URL.Hostname(),
 			httpPort,
+			connection.pool.client.Config.port,
 		)
 	}
 
@@ -182,7 +183,11 @@ func (connection *Connection) serve(ctx context.Context) {
 			urlPath = urlPath + "?" + req.URL.RawQuery
 		}
 
-		log.Printf("[%s] %d %s", req.Method, resp.StatusCode, urlPath)
+		log.Printf("[%s] %d %s",
+			req.Method,
+			resp.StatusCode,
+			urlPath,
+		)
 
 		// Serialize response
 		jsonResponse, err := json.Marshal(beaver.SerializeHTTPResponse(resp))

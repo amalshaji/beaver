@@ -20,3 +20,4 @@ node_modules
 /playwright/.cache/
 
 dist/
+!beaver_server/

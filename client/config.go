@@ -1,62 +1,76 @@
 package client
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	uuid "github.com/nu7hatch/gouuid"
+
 	"gopkg.in/yaml.v3"
 )
 
-// Config configures an Proxy
+type TunnelConfig struct {
+	Name      string
+	Subdomain string
+	Port      int
+}
+
+type ProxyTunnels struct {
+	Tunnels []TunnelConfig
+}
+
 type Config struct {
 	id               string
 	subdomain        string
 	port             int
 	showWsReadErrors bool
 
-	Targets      []string
+	Target       string
 	PoolIdleSize int
 	PoolMaxSize  int
 	SecretKey    string
 }
 
-// NewConfig creates a new ProxyConfig
-func NewConfig() (config *Config) {
-	config = new(Config)
+// ProxyConfig configures an ProxyConfig
 
+func (config *Config) setDefaults() {
 	id, err := uuid.NewV4()
 	if err != nil {
 		panic(err)
 	}
 	config.id = id.String()
 
-	config.Targets = []string{"wss://t.amal.sh"}
-	config.PoolIdleSize = 1
-	config.PoolMaxSize = 100
+	if config.Target == "" {
+		config.Target = "wss://x.amal.sh"
+	}
+	if config.PoolIdleSize == 0 {
+		config.PoolIdleSize = 1
+	}
+	if config.PoolMaxSize == 0 {
+		config.PoolMaxSize = 100
+	}
 
-	return
 }
 
 // LoadConfiguration loads configuration from a YAML file
-func LoadConfiguration(path, subdomain string, port int, showWsReadErrors bool) (config *Config, err error) {
-	config = NewConfig()
+func LoadConfiguration(configFile string, subdomain string, port int, showWsReadErrors bool) (Config, error) {
+	var config Config
 
-	bytes, err := os.ReadFile(path)
+	bytes, err := os.ReadFile(configFile)
 	if err != nil {
-		return
+		return Config{}, err
 	}
 
-	err = yaml.Unmarshal(bytes, config)
+	err = yaml.Unmarshal(bytes, &config)
 	if err != nil {
-		return
+		return Config{}, err
 	}
-	for i, v := range config.Targets {
-		if !strings.HasSuffix(v, "/register") {
-			config.Targets[i] = fmt.Sprintf("%s/register", v)
-		}
+
+	config.setDefaults()
+
+	if !strings.HasSuffix(config.Target, "/register") {
+		config.Target = config.Target + "/register"
 	}
 
 	if subdomain == "" {
@@ -69,5 +83,5 @@ func LoadConfiguration(path, subdomain string, port int, showWsReadErrors bool) 
 	config.port = port
 	config.showWsReadErrors = showWsReadErrors
 
-	return
+	return config, nil
 }
