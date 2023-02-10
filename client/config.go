@@ -23,7 +23,7 @@ type Config struct {
 	port             int
 	showWsReadErrors bool
 
-	Target       string `yaml:"target"`
+	Target       string
 	PoolIdleSize int
 	PoolMaxSize  int
 	SecretKey    string
