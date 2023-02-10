@@ -183,11 +183,11 @@ func (connection *Connection) serve(ctx context.Context) {
 			urlPath = urlPath + "?" + req.URL.RawQuery
 		}
 
-		log.Printf("[%d] [%s] %d %s",
-			connection.pool.client.Config.port,
+		log.Printf("[%s] %d %s",
 			req.Method,
 			resp.StatusCode,
-			urlPath)
+			urlPath,
+		)
 
 		// Serialize response
 		jsonResponse, err := json.Marshal(beaver.SerializeHTTPResponse(resp))
