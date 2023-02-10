@@ -3,9 +3,9 @@ poolidlesize: 1 # Default number of concurrent open (TCP) connections to keep id
 poolmaxsize: 100 # Maximum number of concurrent open (TCP) connections per WSP server
 secretkey: ThisIsASecret # secret key that must match the value set in servers configuration
 tunnels:
-  - name: tp1
-    subdomain:
-    port: 8000
+  - name: tp1 # Tunnel name
+    subdomain: # Subdomain to create the tunnel connection at (optional)
+    port: 8000 # Local server port
   - name: tp2
     subdomain:
     port: 9000
