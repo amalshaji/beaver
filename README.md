@@ -54,24 +54,21 @@ Flags:
   -h, --help   help for start
 ```
 
-#### Example
-
-```shell
-➜  beaver git:(main) ✗ ./beaver --config docs/beaver_client.yaml --port 8000
-2023/02/05 19:46:07 Creating tunnel connection
-2023/02/05 19:46:07 Tunnel running on https://sccrej.tunnel.example.com
-```
-
-Now, `https://sccrej.tunnel.example.com -> http://localhost:8000`
-
 #### Config
 
 ```yaml
-targets:                 
-  - ws://127.0.0.1:8080    # Beaver server url (eg: wss://tunnel.example.com)
-poolidlesize: 1            # Default number of concurrent open (TCP) connections to keep idle per WSP server(optional)
-poolmaxsize: 100           # Maximum number of concurrent open (TCP) connections per WSP server(optional)
-secretkey: ThisIsASecret   # User's secret key set in the server config
+target: ws://localhost:8080     # Endpoints to connect to
+poolidlesize: 1                 # Default number of concurrent open (TCP) connections to keep idle per WSP server
+poolmaxsize: 100                # Maximum number of concurrent open (TCP) connections per WSP server
+secretkey: ThisIsASecret        # secret key that must match the value set in servers configuration
+tunnels:
+  - name: tp1                   # Tunnel name
+    subdomain: test-subdomain-1 # Subdomain to create the tunnel connection at (optional)
+    port: 8000                  # Local server port
+  - name: tp2
+    subdomain: test-subdomain-1
+    port: 9000
+
 ```
 
 ## Server
@@ -83,7 +80,7 @@ Download the binary from [releases page](https://github.com/amalshaji/beaver/rel
 1. Using the binary
 
     ```shell
-    ./beaver_server --config docs/beaver_server.yaml
+    beaver_server --config docs/beaver_server.yaml
     ```
 
 1. Using docker
