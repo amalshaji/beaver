@@ -1,10 +1,13 @@
 package client
 
 import (
+	"os"
 	"strings"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	uuid "github.com/nu7hatch/gouuid"
+
+	"gopkg.in/yaml.v3"
 )
 
 type TunnelConfig struct {
@@ -51,8 +54,18 @@ func (config *Config) setDefaults() {
 }
 
 // LoadConfiguration loads configuration from a YAML file
-func LoadConfiguration(config Config, subdomain string, port int, showWsReadErrors bool) (Config, error) {
-	var err error
+func LoadConfiguration(configFile string, subdomain string, port int, showWsReadErrors bool) (Config, error) {
+	var config Config
+
+	bytes, err := os.ReadFile(configFile)
+	if err != nil {
+		return Config{}, err
+	}
+
+	err = yaml.Unmarshal(bytes, &config)
+	if err != nil {
+		return Config{}, err
+	}
 
 	config.setDefaults()
 
