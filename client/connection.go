@@ -183,7 +183,12 @@ func (connection *Connection) serve(ctx context.Context) {
 			urlPath = urlPath + "?" + req.URL.RawQuery
 		}
 
-		log.Printf("[%s] %d %s",
+		// Even though there exist client specific config, once the connections are established
+		// we don't care about the websocket connection used to proxy the request. As all the
+		// requests are complete in itself(check beaver.HTTPRequest), any client can make the
+		// proxy request. (Fix this???)
+		log.Printf("[%s] [%s] %d %s",
+			req.URL.Port(),
 			req.Method,
 			resp.StatusCode,
 			urlPath,
