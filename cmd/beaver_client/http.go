@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/amalshaji/beaver/client"
+	"github.com/amalshaji/beaver/internal/client"
 	"github.com/spf13/cobra"
 )
 

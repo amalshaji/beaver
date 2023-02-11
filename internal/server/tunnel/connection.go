@@ -1,4 +1,4 @@
-package server
+package tunnel
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/amalshaji/beaver"
+	"github.com/amalshaji/beaver/internal/utils"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
@@ -118,11 +118,11 @@ func (connection *Connection) read() {
 }
 
 // Proxy a HTTP request through the Proxy over the websocket connection
-func (connection *Connection) proxyRequest(c echo.Context) (err error) {
-	log.Printf("proxy request to %s", connection.pool.id)
+func (connection *Connection) ProxyRequest(c echo.Context) (err error) {
+	log.Printf("proxy request to %s", connection.pool.ID)
 
 	// [1]: Serialize HTTP request
-	jsonReq, err := json.Marshal(beaver.SerializeHTTPRequest(c.Request()))
+	jsonReq, err := json.Marshal(utils.SerializeHTTPRequest(c.Request()))
 	if err != nil {
 		return fmt.Errorf("unable to serialize request : %w", err)
 	}
@@ -177,7 +177,7 @@ func (connection *Connection) proxyRequest(c echo.Context) (err error) {
 	close(responseChannel)
 
 	// Deserialize the HTTP Response
-	httpResponse := new(beaver.HTTPResponse)
+	httpResponse := new(utils.HTTPResponse)
 	if err := json.Unmarshal(jsonResponse, httpResponse); err != nil {
 		return fmt.Errorf("unable to unserialize http response : %w", err)
 	}
@@ -266,7 +266,7 @@ func (connection *Connection) close() {
 		return
 	}
 
-	log.Printf("Closing connection from %s", connection.pool.id)
+	log.Printf("Closing connection from %s", connection.pool.ID)
 
 	// This one will be executed *before* lock.Unlock()
 	defer func() { connection.status = Closed }()

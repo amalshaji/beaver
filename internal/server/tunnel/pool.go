@@ -1,4 +1,4 @@
-package server
+package tunnel
 
 import (
 	"log"
@@ -11,10 +11,10 @@ import (
 // Pool handles all connections from the peer.
 type Pool struct {
 	server         *Server
-	id             PoolID
-	subdomain      string
-	localServer    string
-	userIdentifier string
+	ID             PoolID
+	Subdomain      string
+	LocalServer    string
+	UserIdentifier string
 
 	size int
 
@@ -32,10 +32,10 @@ type PoolID string
 func NewPool(server *Server, id PoolID, subdomain, localServer, userIdentifier string) *Pool {
 	p := new(Pool)
 	p.server = server
-	p.id = id
-	p.subdomain = subdomain
-	p.localServer = localServer
-	p.userIdentifier = userIdentifier
+	p.ID = id
+	p.Subdomain = subdomain
+	p.LocalServer = localServer
+	p.UserIdentifier = userIdentifier
 	p.idle = make(chan *Connection)
 	return p
 }
@@ -50,7 +50,7 @@ func (pool *Pool) Register(ws *websocket.Conn) {
 		return
 	}
 
-	log.Printf("Registering new connection from %s for user %s", pool.id, pool.userIdentifier)
+	log.Printf("Registering new connection from %s for user %s", pool.ID, pool.UserIdentifier)
 	connection := NewConnection(pool, ws)
 	pool.connections = append(pool.connections, connection)
 }
@@ -138,4 +138,8 @@ func (pool *Pool) Size() (ps *PoolSize) {
 	}
 
 	return
+}
+
+func (pool *Pool) SetSize(n int) {
+	pool.size = n
 }
