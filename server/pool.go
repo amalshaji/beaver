@@ -58,7 +58,7 @@ func (pool *Pool) Register(ws *websocket.Conn) {
 // Offer offers an idle connection to the server.
 func (pool *Pool) Offer(connection *Connection) {
 	// The original code of root-gg/wsp was invoking goroutine,
-	// but the callder was also invoking goroutine,
+	// but the caller was also invoking goroutine,
 	// so it was deemed unnecessary and removed.
 	pool.idle <- connection
 }
