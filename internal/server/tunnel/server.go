@@ -45,13 +45,17 @@ type Server struct {
 
 // ConnectionRequest is used to request a proxy connection from the dispatcher
 type ConnectionRequest struct {
+	// Pick the connection for this subdomain
+	Subdomain string
+
 	Connection chan *Connection
 }
 
 // NewConnectionRequest creates a new connection request
-func NewConnectionRequest(timeout time.Duration) (cr *ConnectionRequest) {
+func NewConnectionRequest(timeout time.Duration, connectionFor string) (cr *ConnectionRequest) {
 	cr = new(ConnectionRequest)
 	cr.Connection = make(chan *Connection)
+	cr.Subdomain = connectionFor
 	return
 }
 
@@ -162,6 +166,13 @@ func (s *Server) DispatchConnections() {
 			// Build a select statement dynamically to handle an arbitrary number of pools.
 			cases := make([]reflect.SelectCase, len(s.Pools)+1)
 			for i, ch := range s.Pools {
+				// Pick connection for the requested subdomain
+				if ch.Subdomain != request.Subdomain {
+					cases[i] = reflect.SelectCase{
+						Dir:  reflect.SelectRecv,
+						Chan: reflect.ValueOf(nil)}
+					continue
+				}
 				cases[i] = reflect.SelectCase{
 					Dir:  reflect.SelectRecv,
 					Chan: reflect.ValueOf(ch.idle)}
