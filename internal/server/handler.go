@@ -57,7 +57,7 @@ func Request(c echo.Context) error {
 	}
 
 	// [2]: Take an WebSocket connection available from pools for relaying received requests.
-	request := tunnel.NewConnectionRequest(app.Server.Config.GetTimeout())
+	request := tunnel.NewConnectionRequest(app.Server.Config.GetTimeout(), subdomain)
 	// "Dispatcher" is running in a separate thread from the server by `go s.dispatchConnections()`.
 	// It waits to receive requests to dispatch connection from available pools to clients requests.
 	// https://github.com/hgsgtk/wsp/blob/ea4902a8e11f820268e52a6245092728efeffd7f/server/server.go#L93
