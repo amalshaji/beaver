@@ -64,4 +64,6 @@ func loadProxyTunnelConfig() (*client.ProxyTunnels, error) {
 
 func init() {
 	startCmd.Flags().BoolVar(&all, "all", false, "Start all tunnels listed in the config")
+
+	rootCmd.AddCommand(startCmd)
 }

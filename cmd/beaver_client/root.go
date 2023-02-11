@@ -32,7 +32,4 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&showWsReadErrors, "showWsReadErrors", false, "Log websocket read errors")
 
 	rootCmd.PersistentFlags().MarkHidden("showWsReadErrors")
-
-	rootCmd.AddCommand(startCmd)
-	rootCmd.AddCommand(httpCmd)
 }

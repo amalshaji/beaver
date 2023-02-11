@@ -40,4 +40,6 @@ var (
 
 func init() {
 	httpCmd.Flags().StringVar(&subdomain, "subdomain", "", "Subdomain to tunnel http requests (default \"<random_subdomain>\")")
+
+	rootCmd.AddCommand(httpCmd)
 }
