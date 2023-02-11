@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/amalshaji/beaver/client"
+	"github.com/amalshaji/beaver/internal/client"
 )
 
 func startTunnels(tunnels []client.TunnelConfig) {

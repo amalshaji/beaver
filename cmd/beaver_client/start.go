@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/amalshaji/beaver/client"
+	"github.com/amalshaji/beaver/internal/client"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )

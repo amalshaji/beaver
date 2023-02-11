@@ -12,7 +12,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/amalshaji/beaver"
+	"github.com/amalshaji/beaver/internal/utils"
 )
 
 // Status of a Connection
@@ -146,14 +146,14 @@ func (connection *Connection) serve(ctx context.Context) {
 		go connection.pool.connector(ctx)
 
 		// Deserialize request
-		httpRequest := new(beaver.HTTPRequest)
+		httpRequest := new(utils.HTTPRequest)
 		err = json.Unmarshal(jsonRequest, httpRequest)
 		if err != nil {
 			connection.error(fmt.Sprintf("Unable to deserialize json http request : %s\n", err))
 			break
 		}
 
-		req, err := beaver.UnserializeHTTPRequest(httpRequest)
+		req, err := utils.UnserializeHTTPRequest(httpRequest)
 		if err != nil {
 			connection.error(fmt.Sprintf("Unable to deserialize http request : %v\n", err))
 			break
@@ -195,7 +195,7 @@ func (connection *Connection) serve(ctx context.Context) {
 		)
 
 		// Serialize response
-		jsonResponse, err := json.Marshal(beaver.SerializeHTTPResponse(resp))
+		jsonResponse, err := json.Marshal(utils.SerializeHTTPResponse(resp))
 		if err != nil {
 			err = connection.error(fmt.Sprintf("Unable to serialize response : %v\n", err))
 			if err != nil {
@@ -227,7 +227,7 @@ func (connection *Connection) serve(ctx context.Context) {
 }
 
 func (connection *Connection) error(msg string) (err error) {
-	resp := beaver.NewHTTPResponse()
+	resp := utils.NewHTTPResponse()
 	resp.StatusCode = 527
 
 	log.Println(msg)
