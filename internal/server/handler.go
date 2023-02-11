@@ -14,7 +14,6 @@ import (
 	"github.com/amalshaji/beaver/internal/server/tunnel"
 	"github.com/amalshaji/beaver/internal/utils"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 func Request(c echo.Context) error {
@@ -173,13 +172,10 @@ func Start(configFile string) {
 	e.DELETE("*", Request)
 	e.OPTIONS("*", Request)
 
-	e.Use(middleware.Recover())
-
-	// Dispatch connection from available pools to clients requests
-	// in a separate thread from the server thread.
-	go app.Server.DispatchConnections()
-
 	go func() { log.Fatal(e.Start(app.Server.Config.GetAddr())) }()
+
+	// Start the app
+	app.Start()
 
 	// Wait signals
 	sigCh := make(chan os.Signal, 1)

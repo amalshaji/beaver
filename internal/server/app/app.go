@@ -24,6 +24,10 @@ func NewApp(configFile string) *App {
 	}
 }
 
+func (app *App) Start() {
+	app.Server.Start()
+}
+
 func (app *App) Shutdown() {
 	// Shutdown the tunnel server
 	app.Server.Shutdown()
