@@ -15,6 +15,18 @@ import (
 	"github.com/amalshaji/beaver/internal/utils"
 )
 
+// Keep a map of connections(subdomains) for logging
+var activeTunnelConnections = make(map[string]struct{})
+
+func registerNewConnection(subdomain string) {
+	activeTunnelConnections[subdomain] = struct{}{}
+}
+
+func isNewConnection(subdomain string) bool {
+	_, ok := activeTunnelConnections[subdomain]
+	return !ok
+}
+
 // Status of a Connection
 const (
 	CONNECTING = iota
@@ -44,7 +56,7 @@ func NewConnection(pool *Pool) *Connection {
 // Connect to the IsolatorServer using a HTTP websocket
 func (connection *Connection) Connect(ctx context.Context) (err error) {
 	if connection.IsInitialConnection() {
-		log.Printf("Creating tunnel connection for :%d", connection.pool.client.Config.port)
+		log.Printf("Creating tunnel connection for :%d\n", connection.pool.client.Config.port)
 	}
 
 	var res *http.Response
@@ -91,14 +103,17 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 		httpPort = ":" + httpPort
 	}
 
-	if connection.IsInitialConnection() {
-		log.Printf("Tunnel connected %s://%s.%s%s -> http://localhost:%d",
+	if isNewConnection(connection.pool.client.Config.subdomain) {
+		log.Printf("Tunnel connected %s://%s.%s%s -> http://localhost:%d\n",
 			httpScheme,
 			connection.pool.client.Config.subdomain,
 			URL.Hostname(),
 			httpPort,
 			connection.pool.client.Config.port,
 		)
+
+		// register the new connection
+		registerNewConnection(connection.pool.client.Config.subdomain)
 	}
 
 	// Send the greeting message with proxy id and wanted pool size.
