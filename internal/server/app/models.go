@@ -1,11 +1,14 @@
 package app
 
 import (
+	"errors"
 	"time"
 
 	"github.com/amalshaji/beaver/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var ErrPasswordsDoNotMatch = errors.New("wrong password")
 
 type BaseModel struct {
 	ID        uint64 `badgerhold:"key"`
@@ -30,6 +33,15 @@ func (s *SuperUser) SetPassword(rawPassword string) error {
 		return err
 	}
 	s.PasswordHash = string(hashedPassword)
+	return nil
+}
+
+func (s *SuperUser) CheckPassword(rawPassword string) error {
+	rawPassword = utils.SanitizeString(rawPassword)
+	err := bcrypt.CompareHashAndPassword([]byte(s.PasswordHash), []byte(rawPassword))
+	if err != nil {
+		return ErrPasswordsDoNotMatch
+	}
 	return nil
 }
 
