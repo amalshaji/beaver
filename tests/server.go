@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func getRequest(c echo.Context) error {
+func getRequestHandler(c echo.Context) error {
 	return c.JSON(200, map[string]string{"message": "ok"})
 }
 
@@ -15,7 +15,7 @@ type PostPayload struct {
 	Password string `form:"password" json:"password"`
 }
 
-func postRequest(c echo.Context) error {
+func postRequestHandler(c echo.Context) error {
 	var postPayload PostPayload
 	err := c.Bind(&postPayload)
 	if err != nil {
@@ -24,27 +24,27 @@ func postRequest(c echo.Context) error {
 	return c.JSON(200, map[string]string{"message": "ok"})
 }
 
-func putRequest(c echo.Context) error {
+func putRequestHandler(c echo.Context) error {
 	return c.JSON(200, map[string]string{"message": "ok"})
 }
 
-func patchRequest(c echo.Context) error {
+func patchRequestHandler(c echo.Context) error {
 	return c.JSON(200, map[string]string{"message": "ok"})
 }
 
-func deleteRequest(c echo.Context) error {
+func deleteRequestHandler(c echo.Context) error {
 	return c.JSON(200, map[string]string{"message": "ok"})
 }
 
-func optionsRequest(c echo.Context) error {
+func optionsRequestHandler(c echo.Context) error {
 	return c.JSON(200, map[string]string{"message": "ok"})
 }
 
-func redirect302Request(c echo.Context) error {
+func redirect302RequestHandler(c echo.Context) error {
 	return c.Redirect(302, "/")
 }
 
-func redirect307Request(c echo.Context) error {
+func redirect307RequestHandler(c echo.Context) error {
 	return c.Redirect(307, "/")
 }
 
@@ -52,15 +52,15 @@ func main() {
 	app := echo.New()
 	app.HideBanner = true
 
-	app.GET("/", getRequest)
-	app.POST("/", postRequest)
-	app.PUT("/", putRequest)
-	app.PATCH("/", patchRequest)
-	app.DELETE("/", deleteRequest)
-	app.OPTIONS("/", optionsRequest)
+	app.GET("/", getRequestHandler)
+	app.POST("/", postRequestHandler)
+	app.PUT("/", putRequestHandler)
+	app.PATCH("/", patchRequestHandler)
+	app.DELETE("/", deleteRequestHandler)
+	app.OPTIONS("/", optionsRequestHandler)
 
-	app.GET("/redirect-302", redirect302Request)
-	app.GET("/redirect-307", redirect307Request)
+	app.GET("/redirect-302", redirect302RequestHandler)
+	app.GET("/redirect-307", redirect307RequestHandler)
 
 	log.Fatal(app.Start(":9999"))
 }
