@@ -1,11 +1,11 @@
 package app
 
-import bolt "go.etcd.io/bbolt"
+import "github.com/timshannon/badgerhold/v4"
 
 type Dashboard struct {
-	DB *bolt.DB
+	Store *badgerhold.Store
 }
 
-func NewDashboard(db *bolt.DB) *Dashboard {
-	return &Dashboard{DB: db}
+func NewDashboardService(store *badgerhold.Store) *Dashboard {
+	return &Dashboard{Store: store}
 }

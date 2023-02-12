@@ -3,23 +3,22 @@ package app
 import (
 	"github.com/amalshaji/beaver/internal/server/db"
 	"github.com/amalshaji/beaver/internal/server/tunnel"
-
-	bolt "go.etcd.io/bbolt"
+	"github.com/timshannon/badgerhold/v4"
 )
 
 type App struct {
-	DB        *bolt.DB
+	Store     *badgerhold.Store
 	Dashboard *Dashboard
 	User      *User
 	Server    *tunnel.Server
 }
 
 func NewApp(configFile string) *App {
-	db := db.NewDatabase()
+	store := db.NewStore()
 	return &App{
-		DB:        db,
-		Dashboard: NewDashboard(db),
-		User:      NewUser(db),
+		Store:     store,
+		Dashboard: NewDashboardService(store),
+		User:      NewUserService(store),
 		Server:    tunnel.NewServer(configFile),
 	}
 }
@@ -33,5 +32,5 @@ func (app *App) Shutdown() {
 	app.Server.Shutdown()
 
 	// Close database connection
-	app.DB.Close()
+	app.Store.Close()
 }

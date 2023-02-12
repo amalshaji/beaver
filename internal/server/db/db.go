@@ -2,19 +2,20 @@ package db
 
 import (
 	"log"
-	"os"
 
-	bolt "go.etcd.io/bbolt"
+	"github.com/timshannon/badgerhold/v4"
 )
 
-func NewDatabase() *bolt.DB {
-	// Make sure data directory exists
-	if _, err := os.Stat("./data"); os.IsNotExist(err) {
-		os.Mkdir("./data", os.ModePerm)
-	}
-	db, err := bolt.Open("./data/beaver.db", 0600, nil)
+func NewStore() *badgerhold.Store {
+	options := badgerhold.DefaultOptions
+	options.Dir = "data"
+	options.ValueDir = "data"
+	options.Logger = nil
+
+	store, err := badgerhold.Open(options)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return db
+
+	return store
 }
