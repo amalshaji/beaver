@@ -2,8 +2,15 @@
 
 <img src="docs/beaver.png" height="250px">
 
+## Roadmap
+
 > **Warning**
 > This project is in a very early stage, may introduce breaking changes
+
+- [x] Simultaneous tunnel connections
+- [ ] Server dashboard
+- [ ] Server admin to manage users
+- [ ] Oauth2 authentication for tunnel client
 
 ## Client
 
@@ -28,30 +35,6 @@ Flags:
   -h, --help            help for beaver
 
 Use "beaver [command] --help" for more information about a command.
-
----
-
-➜  beaver http --help
-Tunnel local http servers
-
-Usage:
-  beaver http [PORT] [flags]
-
-Flags:
-  -h, --help               help for http
-      --subdomain string   Subdomain to tunnel http requests (default "<random_subdomain>")
-
----
-
-➜  beaver start --help
-Start tunnels defined in the config file
-
-Usage:
-  beaver start [--all] or [tunnel1 tunnel2] [flags]
-
-Flags:
-      --all    Start all tunnels listed in the config
-  -h, --help   help for start
 ```
 
 #### Config
@@ -68,10 +51,13 @@ tunnels:
   - name: tp2
     subdomain: test-subdomain-1
     port: 9000
-
 ```
 
 ## Server
+
+> **Warning**
+> A test server runs at x.amal.sh (replace client target to wss://x.amal.sh)
+> The server runs latest code from the main branch. So use at you own risk.
 
 Download the binary from [releases page](https://github.com/amalshaji/beaver/releases), or use the [docker image](https://hub.docker.com/r/amalshaji/beaver)
 
@@ -88,7 +74,7 @@ Download the binary from [releases page](https://github.com/amalshaji/beaver/rel
     ```shell
     docker run \
       -v $PWD/docs/beaver_server.yaml:/app/config/beaver_server.yaml \
-      -p 8080:8080 amalshaji/beaver:latest
+      -p 8080:8080 --restart unless-stopped amalshaji/beaver:latest
     ```
 
     Replace `$PWD/docs/beaver_server.yaml` with path to your config file
@@ -126,11 +112,8 @@ users:
     secretkey: ThisIsASecret
   - identifier: max@xam.com
     secretkey: ThisIsASecret@2
-
 ```
 
 ## Credits
 
 This project is a fork of [hgsgtk/wsp](https://github.com/hgsgtk/wsp)
-
-## Checkout [wiki](https://github.com/amalshaji/beaver/wiki) for examples
