@@ -16,7 +16,9 @@ RUN go mod download
 
 COPY . /app/
 
-COPY --from=frontend-builder /app/dist /app/internal/server/web
+RUN mkdir -p /app/internal/server/web/dist
+
+COPY --from=frontend-builder /app/dist /app/internal/server/web/dist
 
 RUN go build -ldflags="-s -w" -o beaver_server ./cmd/beaver_server
 
