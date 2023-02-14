@@ -21,7 +21,7 @@
         body: JSON.stringify({ email, password }),
       });
       if (res.status == 200) {
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       } else {
         const data = await res.json();
         toast.error(data.error);
