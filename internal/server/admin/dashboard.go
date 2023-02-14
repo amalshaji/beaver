@@ -1,4 +1,4 @@
-package app
+package admin
 
 import "github.com/timshannon/badgerhold/v4"
 

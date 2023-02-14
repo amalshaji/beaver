@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/amalshaji/beaver/internal/server/app"
+	"github.com/amalshaji/beaver/internal/server/admin"
 	"github.com/amalshaji/beaver/internal/server/db"
 	"github.com/amalshaji/beaver/internal/utils"
 	"github.com/labstack/gommon/color"
@@ -41,7 +41,7 @@ var superUserCmd = &cobra.Command{
 		// Create new user service
 		db := db.NewStore()
 		ctx := context.Background()
-		user := app.NewUserService(db)
+		user := admin.NewUserService(db)
 
 		err = user.CreateSuperUser(ctx, email, password)
 		if err != nil {
