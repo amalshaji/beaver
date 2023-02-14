@@ -23,8 +23,9 @@ func newTestStore() *badgerhold.Store {
 	return store
 }
 
+var store = newTestStore()
+
 func TestCreateSuperUser(t *testing.T) {
-	store := newTestStore()
 	defer func() {
 		store.Badger().DropAll()
 	}()
@@ -46,7 +47,6 @@ func TestCreateSuperUser(t *testing.T) {
 }
 
 func TestLoginSuperUser(t *testing.T) {
-	store := newTestStore()
 	defer func() {
 		store.Badger().DropAll()
 	}()
@@ -69,7 +69,6 @@ func TestLoginSuperUser(t *testing.T) {
 }
 
 func TestValidateSession(t *testing.T) {
-	store := newTestStore()
 	defer func() {
 		store.Badger().DropAll()
 	}()
@@ -92,7 +91,6 @@ func TestValidateSession(t *testing.T) {
 }
 
 func TestLogoutSuperUser(t *testing.T) {
-	store := newTestStore()
 	defer func() {
 		store.Badger().DropAll()
 	}()
