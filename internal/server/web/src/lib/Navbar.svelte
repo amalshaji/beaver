@@ -8,7 +8,7 @@
       credentials: "same-origin",
     });
     if (res.status == 200) {
-      navigate("/");
+      navigate("/", { replace: true });
     }
   };
 </script>
