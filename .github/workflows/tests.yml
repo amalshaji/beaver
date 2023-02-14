@@ -33,7 +33,7 @@ jobs:
       - name: Build frontend
         run: |
           npm i -g pnpm
-          pnpm run --dir internal/server/web build
+          pnpm install && pnpm run --dir internal/server/web build
 
       - name: Build client and server
         run: |
