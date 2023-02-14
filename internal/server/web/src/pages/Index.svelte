@@ -43,7 +43,7 @@
     </div>
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="bg-white py-8 px-4 border sm:rounded-lg sm:px-10">
+      <div class="bg-white py-8 px-4 border shadow sm:rounded-lg sm:px-10">
         <form class="space-y-6" on:submit|preventDefault={loginSuperUser}>
           <div>
             <label for="email" class="block text-sm font-medium text-gray-700">

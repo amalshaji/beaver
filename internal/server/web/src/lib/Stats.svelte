@@ -25,7 +25,7 @@
 <div>
   <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
     <div
-      class="relative bg-white pt-5 px-4 sm:px-6 shadow rounded-lg overflow-hidden"
+      class="relative bg-white pt-5 px-4 sm:px-6 border shadow rounded-lg overflow-hidden"
     >
       <dt>
         <div class="absolute border rounded-md p-3">
@@ -55,7 +55,7 @@
     </div>
 
     <div
-      class="relative bg-white pt-5 px-4 sm:px-6 shadow rounded-lg overflow-hidden"
+      class="relative bg-white pt-5 px-4 sm:px-6 border shadow rounded-lg overflow-hidden"
     >
       <dt>
         <div class="absolute border rounded-md p-3">
@@ -85,7 +85,7 @@
     </div>
 
     <div
-      class="relative bg-white pt-5 px-4 sm:px-6 shadow rounded-lg overflow-hidden"
+      class="relative bg-white pt-5 px-4 sm:px-6 border shadow rounded-lg overflow-hidden"
     >
       <dt>
         <div class="absolute border rounded-md p-3">
