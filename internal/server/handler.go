@@ -2,7 +2,9 @@ package server
 
 import (
 	"fmt"
+	"io/fs"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -11,7 +13,9 @@ import (
 	"syscall"
 
 	"github.com/amalshaji/beaver/internal/server/app"
+	"github.com/amalshaji/beaver/internal/server/static"
 	"github.com/amalshaji/beaver/internal/server/tunnel"
+	"github.com/amalshaji/beaver/internal/server/web"
 	"github.com/amalshaji/beaver/internal/utils"
 	"github.com/labstack/echo/v4"
 )
@@ -152,17 +156,62 @@ func Start(configFile string) {
 	e := echo.New()
 	e.HideBanner = true
 
-	app := app.NewApp(configFile)
+	_app := app.NewApp(configFile)
 
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			c.Set("app", app)
+			c.Set("app", _app)
 			return next(c)
 		}
 	})
 
+	requiresLogin := func(c echo.Context, next echo.HandlerFunc) error {
+		if c.Path() == "/dashboard" {
+			return c.Redirect(307, "/")
+		} else {
+			return next(c)
+		}
+	}
+
+	// Redirect based on valid session token
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if c.Path() == "/" || c.Path() == "/dashboard" {
+				err := app.AuthRequired(c)
+				if err != nil {
+					return requiresLogin(c, next)
+				}
+				if c.Path() == "/" {
+					return c.Redirect(307, "/dashboard")
+				}
+			}
+			return next(c)
+		}
+	})
+
+	// Index
+	if debug := os.Getenv("DEBUG"); debug == "True" {
+		e.File("/", "./internal/server/templates/index.html")
+		e.File("/dashboard", "./internal/server/templates/index.html")
+	} else {
+		fsys, err := fs.Sub(web.Dist, "dist")
+		if err != nil {
+			panic(err)
+		}
+		assetHandler := http.FileServer(http.FS(fsys))
+		e.GET("/", echo.WrapHandler(assetHandler))
+		e.GET("/assets/*", echo.WrapHandler(assetHandler))
+	}
+
+	e.GET("/static/favicon.ico", func(c echo.Context) error {
+		return c.Blob(http.StatusOK, "image/x-icon", static.Favicon)
+	})
+
 	e.GET("/register", Register)
 	e.GET("/status", status)
+
+	// Setup API routes
+	app.SetupApiRoutes(e)
 
 	// Handle tunnel requests
 	e.GET("*", Request)
@@ -172,15 +221,15 @@ func Start(configFile string) {
 	e.DELETE("*", Request)
 	e.OPTIONS("*", Request)
 
-	go func() { log.Fatal(e.Start(app.Server.Config.GetAddr())) }()
+	go func() { log.Fatal(e.Start(_app.Server.Config.GetAddr())) }()
 
 	// Start the app
-	app.Start()
+	_app.Start()
 
 	// Wait signals
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 	<-sigCh
 
-	app.Shutdown()
+	_app.Shutdown()
 }

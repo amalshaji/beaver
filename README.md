@@ -74,6 +74,7 @@ Download the binary from [releases page](https://github.com/amalshaji/beaver/rel
     ```shell
     docker run \
       -v $PWD/docs/beaver_server.yaml:/app/config/beaver_server.yaml \
+      -v $PWD/data:/app/data/ \
       -p 8080:8080 --restart unless-stopped amalshaji/beaver:latest
     ```
 
@@ -87,6 +88,7 @@ Download the binary from [releases page](https://github.com/amalshaji/beaver/rel
         image: amalshaji/beaver:latest
         volumes:
           - ./docs/beaver_server.yaml:/app/config/beaver_server.yaml
+          - ./data:/app/data/
         ports:
           - 8080:8080
         restart: unless-stopped

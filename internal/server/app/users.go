@@ -19,7 +19,7 @@ func NewUserService(store *badgerhold.Store) *User {
 func (u *User) CreateSuperUser(ctx context.Context, email, password string) error {
 	var superuser SuperUser
 
-	if err := u.Store.FindOne(&superuser, badgerhold.Where("Email").Eq(email).Limit(1)); err != nil {
+	if err := u.Store.FindOne(&superuser, badgerhold.Where("Email").Eq(email)); err != nil {
 		if !errors.Is(err, badgerhold.ErrNotFound) {
 			return err
 		}
@@ -41,4 +41,64 @@ func (u *User) CreateSuperUser(ctx context.Context, email, password string) erro
 	}
 
 	return nil
+}
+
+func (u *User) Login(email, password string) (string, error) {
+	var superuser SuperUser
+
+	if err := u.Store.FindOne(&superuser, badgerhold.Where("Email").Eq(email)); err != nil {
+		if errors.Is(err, badgerhold.ErrNotFound) {
+			return "", fmt.Errorf("wrong email or password")
+		}
+		return "", err
+	}
+
+	if err := superuser.CheckPassword(password); err != nil {
+		return "", fmt.Errorf("wrong email or password")
+	}
+
+	superuser.GenerateSessionToken()
+
+	u.Store.UpdateMatching(&SuperUser{}, badgerhold.Where("Email").Eq(email), func(record interface{}) error {
+		update, ok := record.(*SuperUser)
+		if !ok {
+			return fmt.Errorf("error while updating superuser")
+		}
+		update.SessionToken = superuser.SessionToken
+		return nil
+	})
+
+	return superuser.SessionToken, nil
+}
+
+func (u *User) Logout(sessionToken string) error {
+	var err error
+
+	if _, err = u.ValidateSession(sessionToken); err != nil {
+		return err
+	}
+
+	u.Store.UpdateMatching(&SuperUser{}, badgerhold.Where("SessionToken").Eq(sessionToken), func(record interface{}) error {
+		update, ok := record.(*SuperUser)
+		if !ok {
+			return fmt.Errorf("error while updating superuser")
+		}
+
+		update.SessionToken = ""
+		return nil
+	})
+
+	return nil
+}
+
+func (u *User) ValidateSession(sessionToken string) (*SuperUser, error) {
+	var superuser SuperUser
+
+	if err := u.Store.FindOne(&superuser, badgerhold.Where("SessionToken").Eq(sessionToken)); err != nil {
+		if errors.Is(err, badgerhold.ErrNotFound) {
+			return nil, fmt.Errorf("invalid user session")
+		}
+		return nil, err
+	}
+	return &superuser, nil
 }
