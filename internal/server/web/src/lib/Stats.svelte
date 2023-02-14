@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
 
   let active_connections: number = 0,
     cpu_used: number = 0,
     memory_used: number = 0;
+
+  let interval;
 
   const getStats = async () => {
     const res = await fetch("/api/v1/stats");
@@ -16,9 +18,13 @@
 
   onMount(() => {
     getStats();
-    setInterval(() => {
+    interval = setInterval(() => {
       getStats();
     }, 5000);
+  });
+
+  onDestroy(() => {
+    clearInterval(interval);
   });
 </script>
 
