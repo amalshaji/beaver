@@ -4,7 +4,10 @@ build-server:
 	go build -ldflags="-s -w" -o beaver_server ./cmd/beaver_server
 
 publish-server-image:
-	docker buildx build --platform linux/amd64,linux/arm64 -t amalshaji/beaver:$(tag) -f deployments/Dockerfile --push .
+	docker buildx build \
+		--platform linux/amd64,linux/arm64 \
+		-t amalshaji/beaver:$(tag) \
+		-f deployments/Dockerfile --push .
 
 build-client:
 	go build -ldflags="-s -w" -o beaver ./cmd/beaver_client

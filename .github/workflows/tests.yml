@@ -20,10 +20,20 @@ jobs:
         with:
           go-version: 1.19
 
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.12.1
+
       - name: Add hosts to /etc/hosts
         run: |
           sudo echo "127.0.0.1 test.localhost" | sudo tee -a /etc/hosts
           sudo echo "127.0.0.1 xxyyzz.localhost" | sudo tee -a /etc/hosts
+
+      - name: Build frontend
+        run: |
+          npm i -g pnpm
+          pnpm install --dir internal/server/web build && pnpm run --dir internal/server/web build
 
       - name: Build client and server
         run: |

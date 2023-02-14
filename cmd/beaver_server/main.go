@@ -3,11 +3,11 @@ package main
 import (
 	"log"
 
-	"github.com/amalshaji/beaver/internal/server"
+	handler "github.com/amalshaji/beaver/internal/server/handlers"
 )
 
 func startServer() {
-	server.Start(configFile)
+	handler.Start(configFile)
 }
 
 func main() {

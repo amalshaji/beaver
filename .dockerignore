@@ -7,3 +7,8 @@ beaver
 beaver_server
 Makefile
 README.md
+data
+dist
+internal/server/web/node_modules
+internal/server/web/dist
+playwright-report

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/amalshaji/beaver/internal/server/admin"
 	"github.com/amalshaji/beaver/internal/server/db"
 	"github.com/amalshaji/beaver/internal/server/tunnel"
 	"github.com/timshannon/badgerhold/v4"
@@ -8,8 +9,8 @@ import (
 
 type App struct {
 	Store     *badgerhold.Store
-	Dashboard *Dashboard
-	User      *User
+	Dashboard *admin.Dashboard
+	User      *admin.User
 	Server    *tunnel.Server
 }
 
@@ -17,8 +18,8 @@ func NewApp(configFile string) *App {
 	store := db.NewStore()
 	return &App{
 		Store:     store,
-		Dashboard: NewDashboardService(store),
-		User:      NewUserService(store),
+		Dashboard: admin.NewDashboardService(store),
+		User:      admin.NewUserService(store),
 		Server:    tunnel.NewServer(configFile),
 	}
 }

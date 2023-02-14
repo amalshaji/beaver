@@ -1,4 +1,4 @@
-package app
+package admin
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var ErrPasswordsDoNotMatch = errors.New("wrong password")
+var ErrWrongPassword = errors.New("wrong password")
 
 type BaseModel struct {
 	ID        uint64 `badgerhold:"key"`
@@ -24,6 +24,7 @@ type SuperUser struct {
 
 	Email        string `badgerhold:"unique"`
 	PasswordHash string
+	SessionToken string
 }
 
 func (s *SuperUser) SetPassword(rawPassword string) error {
@@ -40,20 +41,18 @@ func (s *SuperUser) CheckPassword(rawPassword string) error {
 	rawPassword = utils.SanitizeString(rawPassword)
 	err := bcrypt.CompareHashAndPassword([]byte(s.PasswordHash), []byte(rawPassword))
 	if err != nil {
-		return ErrPasswordsDoNotMatch
+		return ErrWrongPassword
 	}
 	return nil
 }
 
-type UserSession struct {
-	BaseModel
-
-	Token string `badgerhold:"unique"`
-	User  SuperUser
+func (s *SuperUser) GenerateSessionToken() error {
+	s.SessionToken = utils.GenerateUUIDV4().String()
+	return nil
 }
 
-func (u *UserSession) GenerateSessionToken() error {
-	u.Token = utils.GenerateUUIDV4().String()
+func (s *SuperUser) ResetSessionToken() error {
+	s.SessionToken = ""
 	return nil
 }
 

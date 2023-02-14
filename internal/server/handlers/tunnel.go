@@ -1,14 +1,9 @@
-package server
+package handler
 
 import (
 	"fmt"
 	"log"
 	"net/url"
-	"os"
-	"os/signal"
-	"strconv"
-	"strings"
-	"syscall"
 
 	"github.com/amalshaji/beaver/internal/server/app"
 	"github.com/amalshaji/beaver/internal/server/tunnel"
@@ -16,7 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func Request(c echo.Context) error {
+func request(c echo.Context) error {
 	// [1]: Receive requests for proxying
 	app := c.Get("app").(*app.App)
 
@@ -90,97 +85,22 @@ func Request(c echo.Context) error {
 	return nil
 }
 
-// Request receives the WebSocket upgrade handshake request from wsp_client.
-func Register(c echo.Context) error {
-	app := c.Get("app").(*app.App)
+func GetTunnelHandler(app *app.App) *echo.Echo {
+	tunnelRouter := echo.New()
 
-	subdomain := c.Request().Header.Get("X-TUNNEL-SUBDOMAIN")
-	localServer := c.Request().Header.Get("X-LOCAL-SERVER")
-
-	secretKey := c.Request().Header.Get("X-SECRET-KEY")
-	greeting := c.Request().Header.Get("X-GREETING-MESSAGE")
-
-	var userIdentifier string
-	for _, user := range app.Server.Config.Users {
-		if user.SecretKey == secretKey {
-			userIdentifier = user.Identifier
-		}
-	}
-
-	if userIdentifier == "" {
-		return utils.ProxyErrorf(c, "Invalid X-SECRET-KEY")
-	}
-
-	// Parse the greeting message
-	split := strings.Split(string(greeting), "_")
-	id := tunnel.PoolID(split[0])
-	size, err := strconv.Atoi(split[1])
-	if err != nil {
-		return utils.ProxyErrorf(c, "Unable to parse greeting message : %s", err)
-	}
-
-	// 3. Register the connection into server pools.
-	// s.lock is for exclusive control of pools operation.
-	app.Server.Lock.Lock()
-	defer app.Server.Lock.Unlock()
-
-	pool, err := app.Server.GetOrCreatePoolForUser(subdomain, localServer, userIdentifier, id)
-	if err != nil {
-		return utils.ProxyErrorf(c, "subdomain already in use")
-	}
-
-	// update pool size
-	pool.SetSize(size)
-
-	// Upgrade the received HTTP request to a WebSocket connection
-	ws, err := app.Server.Upgrader.Upgrade(c.Response(), c.Request(), nil)
-	if err != nil {
-		return utils.ProxyErrorf(c, "HTTP upgrade error : %v", err)
-	}
-
-	// Add the WebSocket connection to the pool
-	pool.Register(ws)
-
-	return nil
-}
-
-func status(c echo.Context) error {
-	return c.JSON(200, map[string]string{"message": "ok"})
-}
-
-func Start(configFile string) {
-	e := echo.New()
-	e.HideBanner = true
-
-	app := app.NewApp(configFile)
-
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	tunnelRouter.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			c.Set("app", app)
 			return next(c)
 		}
 	})
 
-	e.GET("/register", Register)
-	e.GET("/status", status)
+	tunnelRouter.GET("*", request)
+	tunnelRouter.POST("*", request)
+	tunnelRouter.PUT("*", request)
+	tunnelRouter.PATCH("*", request)
+	tunnelRouter.DELETE("*", request)
+	tunnelRouter.OPTIONS("*", request)
 
-	// Handle tunnel requests
-	e.GET("*", Request)
-	e.POST("*", Request)
-	e.PUT("*", Request)
-	e.PATCH("*", Request)
-	e.DELETE("*", Request)
-	e.OPTIONS("*", Request)
-
-	go func() { log.Fatal(e.Start(app.Server.Config.GetAddr())) }()
-
-	// Start the app
-	app.Start()
-
-	// Wait signals
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	<-sigCh
-
-	app.Shutdown()
+	return tunnelRouter
 }
