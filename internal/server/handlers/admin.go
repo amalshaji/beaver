@@ -93,7 +93,7 @@ func AuthRequired(c echo.Context) error {
 		return ErrAuthRequired
 	}
 	app := c.Get("app").(*app.App)
-	_, err = app.User.ValidateSession(sessionToken.Value)
+	_, err = app.User.ValidateSession(c.Request().Context(), sessionToken.Value)
 	if err != nil {
 		return ErrAuthRequired
 	}
@@ -127,7 +127,7 @@ func LoginApi(c echo.Context) error {
 
 	app := c.Get("app").(*app.App)
 
-	token, err := app.User.Login(p.Email, p.Password)
+	token, err := app.User.Login(c.Request().Context(), p.Email, p.Password)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
@@ -156,7 +156,7 @@ func LogoutApi(c echo.Context) error {
 
 	app := c.Get("app").(*app.App)
 
-	err = app.User.Logout(sessionCookie.Value)
+	err = app.User.Logout(c.Request().Context(), sessionCookie.Value)
 
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})

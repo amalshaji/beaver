@@ -47,7 +47,7 @@ var superUserCmd = &cobra.Command{
 		ctx := context.Background()
 		user := admin.NewUserService(db)
 
-		err = user.CreateSuperUser(ctx, email, string(password))
+		_, err = user.CreateSuperUser(ctx, email, string(password))
 		if err != nil {
 			fmt.Println(color.Red(err.Error()))
 		} else {
