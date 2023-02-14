@@ -34,8 +34,6 @@ func (u *User) findUserByEmail(ctx context.Context, email string) (*SuperUser, e
 
 func (u *User) CreateSuperUser(ctx context.Context, email, password string) (*SuperUser, error) {
 	existingSuperUser, err := u.findUserByEmail(ctx, email)
-	fmt.Printf("existing user: %#v\n", existingSuperUser)
-
 	if err != nil && !errors.Is(err, ErrSuperUserNotFound) {
 		return nil, err
 	}
