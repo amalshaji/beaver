@@ -27,7 +27,6 @@ func TestCreateSuperUser(t *testing.T) {
 	store := newTestStore()
 	defer func() {
 		store.Badger().DropAll()
-		store.Close()
 	}()
 
 	var err error
@@ -50,7 +49,6 @@ func TestLoginSuperUser(t *testing.T) {
 	store := newTestStore()
 	defer func() {
 		store.Badger().DropAll()
-		store.Close()
 	}()
 
 	ctx := context.Background()
@@ -74,7 +72,6 @@ func TestValidateSession(t *testing.T) {
 	store := newTestStore()
 	defer func() {
 		store.Badger().DropAll()
-		store.Close()
 	}()
 
 	ctx := context.Background()
@@ -98,7 +95,6 @@ func TestLogoutSuperUser(t *testing.T) {
 	store := newTestStore()
 	defer func() {
 		store.Badger().DropAll()
-		store.Close()
 	}()
 
 	ctx := context.Background()
