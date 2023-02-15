@@ -6,14 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSuperUserModel(t *testing.T) {
-	superuser := SuperUser{
+func TestAdminUserModel(t *testing.T) {
+	adminuser := AdminUser{
 		Email: "test@beaver.com",
 	}
 
-	superuser.SetPassword("password")
+	adminuser.SetPassword("password")
 
-	assert.NotEqual(t, "password", superuser.PasswordHash)
-	assert.NoError(t, superuser.CheckPassword("password"))
-	assert.Error(t, superuser.CheckPassword("wrongpassword"))
+	assert.NotEqual(t, "password", adminuser.PasswordHash)
+	assert.NoError(t, adminuser.CheckPassword("password"))
+	assert.Error(t, adminuser.CheckPassword("wrongpassword"))
 }

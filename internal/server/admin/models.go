@@ -19,40 +19,41 @@ func (b *BaseModel) MarkAsNew() {
 	b.CreatedAt = time.Now()
 }
 
-type SuperUser struct {
+type AdminUser struct {
 	BaseModel
 
 	Email        string `badgerhold:"unique"`
 	PasswordHash string
 	SessionToken string
+	IsSuperUser  bool
 }
 
-func (s *SuperUser) SetPassword(rawPassword string) error {
+func (a *AdminUser) SetPassword(rawPassword string) error {
 	rawPassword = utils.SanitizeString(rawPassword)
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(rawPassword), 13)
 	if err != nil {
 		return err
 	}
-	s.PasswordHash = string(hashedPassword)
+	a.PasswordHash = string(hashedPassword)
 	return nil
 }
 
-func (s *SuperUser) CheckPassword(rawPassword string) error {
+func (a *AdminUser) CheckPassword(rawPassword string) error {
 	rawPassword = utils.SanitizeString(rawPassword)
-	err := bcrypt.CompareHashAndPassword([]byte(s.PasswordHash), []byte(rawPassword))
+	err := bcrypt.CompareHashAndPassword([]byte(a.PasswordHash), []byte(rawPassword))
 	if err != nil {
 		return ErrWrongPassword
 	}
 	return nil
 }
 
-func (s *SuperUser) GenerateSessionToken() error {
-	s.SessionToken = utils.GenerateUUIDV4().String()
+func (a *AdminUser) GenerateSessionToken() error {
+	a.SessionToken = utils.GenerateUUIDV4().String()
 	return nil
 }
 
-func (s *SuperUser) ResetSessionToken() error {
-	s.SessionToken = ""
+func (a *AdminUser) ResetSessionToken() error {
+	a.SessionToken = ""
 	return nil
 }
 
