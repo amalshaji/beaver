@@ -8,10 +8,10 @@ import (
 	"github.com/timshannon/badgerhold/v4"
 )
 
-var ErrSuperUserNotFound = errors.New("user does not exist")
+var ErrAdminUserNotFound = errors.New("user does not exist")
 var ErrInvalidUserSession = errors.New("invalid user session")
 var ErrWrongEmailOrPassword = errors.New("wrong email or password")
-var ErrDuplicateSuperUser = errors.New("superuser with the same email exists")
+var ErrDuplicateAdminUser = errors.New("user with the same email exists")
 
 type User struct {
 	Store *badgerhold.Store
@@ -21,67 +21,76 @@ func NewUserService(store *badgerhold.Store) *User {
 	return &User{Store: store}
 }
 
-func (u *User) findUserByEmail(ctx context.Context, email string) (*SuperUser, error) {
-	var superUser SuperUser
+func (u *User) findUserByEmail(ctx context.Context, email string) (*AdminUser, error) {
+	var superUser AdminUser
 	if err := u.Store.FindOne(&superUser, badgerhold.Where("Email").Eq(email)); err != nil {
 		if errors.Is(err, badgerhold.ErrNotFound) {
-			return nil, ErrSuperUserNotFound
+			return nil, ErrAdminUserNotFound
 		}
 		return nil, err
 	}
 	return &superUser, nil
 }
 
-func (u *User) CreateSuperUser(ctx context.Context, email, password string) (*SuperUser, error) {
-	existingSuperUser, err := u.findUserByEmail(ctx, email)
-	if err != nil && !errors.Is(err, ErrSuperUserNotFound) {
+func (u *User) CreateUser(ctx context.Context, email, password string, isSuperUser bool) (*AdminUser, error) {
+	existingAdminUser, err := u.findUserByEmail(ctx, email)
+	if err != nil && !errors.Is(err, ErrAdminUserNotFound) {
 		return nil, err
 	}
 
-	if existingSuperUser != nil {
-		return nil, ErrDuplicateSuperUser
+	if existingAdminUser != nil {
+		return nil, ErrDuplicateAdminUser
 	}
 
-	var superUser SuperUser
+	var adminUser AdminUser
 
-	superUser.Email = email
-	superUser.SetPassword(password)
-	superUser.MarkAsNew()
+	adminUser.Email = email
+	adminUser.SetPassword(password)
+	adminUser.IsSuperUser = isSuperUser
+	adminUser.MarkAsNew()
 
-	if err := u.Store.Insert(badgerhold.NextSequence(), superUser); err != nil {
+	if err := u.Store.Insert(badgerhold.NextSequence(), adminUser); err != nil {
 		if errors.Is(err, badgerhold.ErrUniqueExists) {
-			return nil, ErrDuplicateSuperUser
+			return nil, ErrDuplicateAdminUser
 		}
 		return nil, err
 	}
 
-	return &superUser, nil
+	return &adminUser, nil
+}
+
+func (u *User) CreateAdminUser(ctx context.Context, email, password string) (*AdminUser, error) {
+	return u.CreateUser(ctx, email, password, false)
+}
+
+func (u *User) CreateSuperUser(ctx context.Context, email, password string) (*AdminUser, error) {
+	return u.CreateUser(ctx, email, password, true)
 }
 
 func (u *User) Login(ctx context.Context, email, password string) (string, error) {
-	var superUser *SuperUser
+	var adminUser *AdminUser
 
-	superUser, err := u.findUserByEmail(ctx, email)
-	if err != nil && errors.Is(err, ErrSuperUserNotFound) {
+	adminUser, err := u.findUserByEmail(ctx, email)
+	if err != nil && errors.Is(err, ErrAdminUserNotFound) {
 		return "", ErrWrongEmailOrPassword
 	}
 
-	if err := superUser.CheckPassword(password); err != nil {
+	if err := adminUser.CheckPassword(password); err != nil {
 		return "", ErrWrongEmailOrPassword
 	}
 
-	superUser.GenerateSessionToken()
+	adminUser.GenerateSessionToken()
 
-	u.Store.UpdateMatching(&SuperUser{}, badgerhold.Where("Email").Eq(email), func(record interface{}) error {
-		update, ok := record.(*SuperUser)
+	u.Store.UpdateMatching(&AdminUser{}, badgerhold.Where("Email").Eq(email), func(record interface{}) error {
+		update, ok := record.(*AdminUser)
 		if !ok {
 			return fmt.Errorf("error while updating superuser")
 		}
-		update.SessionToken = superUser.SessionToken
+		update.SessionToken = adminUser.SessionToken
 		return nil
 	})
 
-	return superUser.SessionToken, nil
+	return adminUser.SessionToken, nil
 }
 
 func (u *User) Logout(ctx context.Context, sessionToken string) error {
@@ -91,8 +100,8 @@ func (u *User) Logout(ctx context.Context, sessionToken string) error {
 		return err
 	}
 
-	u.Store.UpdateMatching(&SuperUser{}, badgerhold.Where("SessionToken").Eq(sessionToken), func(record interface{}) error {
-		update, ok := record.(*SuperUser)
+	u.Store.UpdateMatching(&AdminUser{}, badgerhold.Where("SessionToken").Eq(sessionToken), func(record interface{}) error {
+		update, ok := record.(*AdminUser)
 		if !ok {
 			return fmt.Errorf("error while updating superuser")
 		}
@@ -104,14 +113,14 @@ func (u *User) Logout(ctx context.Context, sessionToken string) error {
 	return nil
 }
 
-func (u *User) ValidateSession(ctx context.Context, sessionToken string) (*SuperUser, error) {
-	var superuser SuperUser
+func (u *User) ValidateSession(ctx context.Context, sessionToken string) (*AdminUser, error) {
+	var adminUser AdminUser
 
-	if err := u.Store.FindOne(&superuser, badgerhold.Where("SessionToken").Eq(sessionToken)); err != nil {
+	if err := u.Store.FindOne(&adminUser, badgerhold.Where("SessionToken").Eq(sessionToken)); err != nil {
 		if errors.Is(err, badgerhold.ErrNotFound) {
 			return nil, ErrInvalidUserSession
 		}
 		return nil, err
 	}
-	return &superuser, nil
+	return &adminUser, nil
 }

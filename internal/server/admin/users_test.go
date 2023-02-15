@@ -36,17 +36,43 @@ func TestCreateSuperUser(t *testing.T) {
 	user := NewUserService(store)
 
 	// No error while creating superuser
-	_, err = user.CreateSuperUser(ctx, "test@beaver.com", "password")
-
+	superUser, err := user.CreateSuperUser(ctx, "test@beaver.com", "password")
 	assert.NoError(t, err)
+	assert.True(t, superUser.IsSuperUser)
 
 	// Creating superuser with duplicate email should throw error
 	_, err = user.CreateSuperUser(ctx, "test@beaver.com", "password")
 	assert.Error(t, err)
-	assert.Equal(t, err, ErrDuplicateSuperUser)
+	assert.Equal(t, err, ErrDuplicateAdminUser)
 }
 
-func TestLoginSuperUser(t *testing.T) {
+func TestAdminSuperUser(t *testing.T) {
+	defer func() {
+		store.Badger().DropAll()
+	}()
+
+	var err error
+
+	ctx := context.Background()
+	user := NewUserService(store)
+
+	// No error while creating adminuser
+	adminUser, err := user.CreateAdminUser(ctx, "test@beaver.com", "password")
+	assert.NoError(t, err)
+	assert.False(t, adminUser.IsSuperUser)
+
+	// Creating adminuser with duplicate email should throw error
+	_, err = user.CreateAdminUser(ctx, "test@beaver.com", "password")
+	assert.Error(t, err)
+	assert.Equal(t, err, ErrDuplicateAdminUser)
+
+	// Creating superuser with duplicate email should throw error
+	_, err = user.CreateSuperUser(ctx, "test@beaver.com", "password")
+	assert.Error(t, err)
+	assert.Equal(t, err, ErrDuplicateAdminUser)
+}
+
+func TestLoginAdminUser(t *testing.T) {
 	defer func() {
 		store.Badger().DropAll()
 	}()
@@ -54,7 +80,7 @@ func TestLoginSuperUser(t *testing.T) {
 	ctx := context.Background()
 	user := NewUserService(store)
 
-	_, _ = user.CreateSuperUser(ctx, "test@beaver.com", "password")
+	_, _ = user.CreateAdminUser(ctx, "test@beaver.com", "password")
 
 	token, _ := user.Login(ctx, "test@beaver.com", "password")
 
@@ -76,7 +102,7 @@ func TestValidateSession(t *testing.T) {
 	ctx := context.Background()
 	user := NewUserService(store)
 
-	superUser, _ := user.CreateSuperUser(ctx, "test@beaver.com", "password")
+	superUser, _ := user.CreateAdminUser(ctx, "test@beaver.com", "password")
 
 	token, _ := user.Login(ctx, "test@beaver.com", "password")
 
@@ -90,7 +116,7 @@ func TestValidateSession(t *testing.T) {
 	assert.Equal(t, ErrInvalidUserSession, err)
 }
 
-func TestLogoutSuperUser(t *testing.T) {
+func TestLogoutAdminUser(t *testing.T) {
 	defer func() {
 		store.Badger().DropAll()
 	}()
@@ -98,7 +124,7 @@ func TestLogoutSuperUser(t *testing.T) {
 	ctx := context.Background()
 	user := NewUserService(store)
 
-	_, _ = user.CreateSuperUser(ctx, "test@beaver.com", "password")
+	_, _ = user.CreateAdminUser(ctx, "test@beaver.com", "password")
 
 	token, _ := user.Login(ctx, "test@beaver.com", "password")
 
