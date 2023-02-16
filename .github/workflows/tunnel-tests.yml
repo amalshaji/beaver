@@ -41,6 +41,10 @@ jobs:
           go build -ldflags="-s -w" -o beaver_server ./cmd/beaver_server
           go build -ldflags="-s -w" -o test_server ./tests/server.go
 
+      - name: Prepare test database
+        run: |
+          mv tests/data .
+
       - name: Start test servers
         run: |
           ./test_server &
@@ -50,7 +54,7 @@ jobs:
 
       - name: Start test client
         run: |
-          ./beaver --config docs/beaver_client.yaml http 9999 --subdomain test &
+          ./beaver --config tests/beaver_client.yaml http 9999 --subdomain test &
           sleep 3
 
       - name: Run tests
