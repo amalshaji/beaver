@@ -10,6 +10,7 @@
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
+    "@svelte-plugins/tooltips": "^0.1.6",
     "@sveltejs/vite-plugin-svelte": "^2.0.2",
     "@tailwindcss/forms": "^0.5.3",
     "@tsconfig/svelte": "^3.0.0",
