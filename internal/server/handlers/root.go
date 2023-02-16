@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -24,11 +23,10 @@ func Start(configFile string) {
 		req := c.Request()
 		res := c.Response()
 
-		s, err := _app.Server.GetSubdomainFromHost(req.Host)
+		_, err := _app.Server.GetSubdomainFromHost(req.Host)
 		if err != nil {
 			adminHandler.ServeHTTP(res, req)
 		} else {
-			fmt.Println(err, s)
 			tunnelHandler.ServeHTTP(res, req)
 		}
 		return nil

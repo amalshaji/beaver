@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/amalshaji/beaver/internal/server/admin"
 	"github.com/amalshaji/beaver/internal/server/app"
 	"github.com/amalshaji/beaver/internal/server/static"
 	"github.com/amalshaji/beaver/internal/server/tunnel"
@@ -29,15 +30,9 @@ func register(c echo.Context) error {
 	secretKey := c.Request().Header.Get("X-SECRET-KEY")
 	greeting := c.Request().Header.Get("X-GREETING-MESSAGE")
 
-	var userIdentifier string
-	for _, user := range app.Server.Config.Users {
-		if user.SecretKey == secretKey {
-			userIdentifier = user.Identifier
-		}
-	}
-
-	if userIdentifier == "" {
-		return utils.ProxyErrorf(c, "Invalid X-SECRET-KEY")
+	tunnelUser, err := app.User.GetTunnelUserBySecret(c.Request().Context(), secretKey)
+	if err != nil && errors.Is(err, admin.ErrTunnelUserNotFound) {
+		return utils.ProxyErrorf(c, "invalid secretKey - unregistered tunnel user")
 	}
 
 	// Parse the greeting message
@@ -53,7 +48,7 @@ func register(c echo.Context) error {
 	app.Server.Lock.Lock()
 	defer app.Server.Lock.Unlock()
 
-	pool, err := app.Server.GetOrCreatePoolForUser(subdomain, localServer, userIdentifier, id)
+	pool, err := app.Server.GetOrCreatePoolForUser(subdomain, localServer, tunnelUser.Email, id)
 	if err != nil {
 		return utils.ProxyErrorf(c, "subdomain already in use")
 	}
@@ -84,7 +79,7 @@ type LoginPayload struct {
 	Password string `jspn:"password"`
 }
 
-func AuthRequired(c echo.Context) error {
+func authRequired(c echo.Context) error {
 	sessionToken, err := c.Request().Cookie("beaver_session")
 	if err != nil {
 		return ErrAuthRequired
@@ -102,7 +97,7 @@ func AuthRequired(c echo.Context) error {
 
 func authRequiredMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		err := AuthRequired(c)
+		err := authRequired(c)
 		if err != nil {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": err.Error()})
 		}
@@ -110,15 +105,18 @@ func authRequiredMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func SetupApiRoutes(e *echo.Echo) {
+func setupApiRoutes(e *echo.Echo) {
 	g := e.Group("/api/v1")
 
-	g.POST("/login", LoginApi)
-	g.POST("/logout", LogoutApi, authRequiredMiddleware)
-	g.GET("/stats", ServerStats, authRequiredMiddleware)
+	g.POST("/login", loginApi)
+	g.POST("/logout", logoutApi, authRequiredMiddleware)
+	g.GET("/stats", serverStats, authRequiredMiddleware)
+	g.GET("/tunnel-users", getTunnelUsers, authRequiredMiddleware)
+	g.POST("/tunnel-users", createTunnelUser, authRequiredMiddleware)
+	g.PUT("/tunnel-users", rotateTunnelUserSecretKey, authRequiredMiddleware)
 }
 
-func LoginApi(c echo.Context) error {
+func loginApi(c echo.Context) error {
 	var p LoginPayload
 
 	if err := c.Bind(&p); err != nil {
@@ -147,7 +145,7 @@ func LoginApi(c echo.Context) error {
 	return nil
 }
 
-func LogoutApi(c echo.Context) error {
+func logoutApi(c echo.Context) error {
 	sessionCookie, err := c.Request().Cookie("beaver_session")
 
 	if err != nil || sessionCookie == nil || sessionCookie.Value == "" {
@@ -171,7 +169,7 @@ func LogoutApi(c echo.Context) error {
 	return nil
 }
 
-func ServerStats(c echo.Context) error {
+func serverStats(c echo.Context) error {
 	var result = make(map[string]any)
 
 	v, _ := mem.VirtualMemory()
@@ -188,6 +186,49 @@ func ServerStats(c echo.Context) error {
 
 	c.JSON(200, result)
 	return nil
+}
+
+type createTunnelUserPayload struct {
+	Email string
+}
+
+func createTunnelUser(c echo.Context) error {
+	var payload createTunnelUserPayload
+	if err := c.Bind(&payload); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid payload"})
+	}
+
+	app := c.Get("app").(*app.App)
+
+	tunnelUser, err := app.User.CreateTunnelUser(c.Request().Context(), payload.Email)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, tunnelUser)
+}
+
+func getTunnelUsers(c echo.Context) error {
+	app := c.Get("app").(*app.App)
+	tunnelUsers, err := app.User.ListTunnelUsers(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, tunnelUsers)
+}
+
+func rotateTunnelUserSecretKey(c echo.Context) error {
+	var payload createTunnelUserPayload
+	if err := c.Bind(&payload); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid payload"})
+	}
+
+	app := c.Get("app").(*app.App)
+	tunnelUsers, err := app.User.RotateTunnelUserSecretKey(c.Request().Context(), payload.Email)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, tunnelUsers)
 }
 
 func GetAdminHandler(app *app.App) *echo.Echo {
@@ -212,7 +253,7 @@ func GetAdminHandler(app *app.App) *echo.Echo {
 	adminRouter.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			if c.Path() == "/" || c.Path() == "/dashboard" {
-				err := AuthRequired(c)
+				err := authRequired(c)
 				if err != nil {
 					return requiresLogin(c, next)
 				}
@@ -251,7 +292,7 @@ func GetAdminHandler(app *app.App) *echo.Echo {
 	adminRouter.GET("/status", status)
 
 	// Setup API routes
-	SetupApiRoutes(adminRouter)
+	setupApiRoutes(adminRouter)
 
 	return adminRouter
 }

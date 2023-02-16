@@ -1,0 +1,37 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Unit Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.12.1
+
+      - name: Build frontend
+        run: |
+          npm i -g pnpm
+          pnpm install --dir internal/server/web build && pnpm run --dir internal/server/web build
+
+      - name: Download packages
+        run: go mod download
+
+      - name: Run tests
+        run: go test $(go list ./... | grep -v /tests) # Exclude the tests directory
