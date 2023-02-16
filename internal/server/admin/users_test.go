@@ -139,3 +139,78 @@ func TestLogoutAdminUser(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, ErrInvalidUserSession, err)
 }
+
+func TestCreateTunnelUser(t *testing.T) {
+	defer func() {
+		store.Badger().DropAll()
+	}()
+
+	ctx := context.Background()
+	user := NewUserService(store)
+
+	tu, err := user.CreateTunnelUser(ctx, "test@beaver.com")
+	assert.NoError(t, err)
+	assert.Equal(t, "test@beaver.com", tu.Email)
+	assert.NotEqual(t, "", tu.SecretKey)
+}
+
+func TestGetTunnelUserBySecretKey(t *testing.T) {
+	defer func() {
+		store.Badger().DropAll()
+	}()
+
+	ctx := context.Background()
+	user := NewUserService(store)
+
+	tu, _ := user.CreateTunnelUser(ctx, "test@beaver.com")
+
+	ntu, err := user.GetTunnelUserBySecret(ctx, tu.SecretKey)
+	assert.NoError(t, err)
+	assert.Equal(t, tu.Email, ntu.Email)
+}
+
+func TestRotateTunnelUserSecretKey(t *testing.T) {
+	defer func() {
+		store.Badger().DropAll()
+	}()
+
+	ctx := context.Background()
+	user := NewUserService(store)
+
+	tu, _ := user.CreateTunnelUser(ctx, "test@beaver.com")
+
+	_, err := user.RotateTunnelUserSecretKey(ctx, tu.Email)
+	assert.NoError(t, err)
+
+	ntu, _ := user.findTunnelUserByEmail(ctx, "test@beaver.com")
+	assert.NotEqual(t, tu.SecretKey, ntu.SecretKey)
+
+	nontu, err := user.RotateTunnelUserSecretKey(ctx, "test2@beaver.com")
+	assert.Error(t, err)
+	assert.Equal(t, ErrTunnelUserNotFound, err)
+	assert.Nil(t, nontu)
+}
+
+func TestListTunnelUsers(t *testing.T) {
+	defer func() {
+		store.Badger().DropAll()
+	}()
+
+	ctx := context.Background()
+	user := NewUserService(store)
+
+	tunnelUsers, err := user.ListTunnelUsers(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(tunnelUsers))
+
+	_, _ = user.CreateTunnelUser(ctx, "test@beaver.com")
+	_, _ = user.CreateTunnelUser(ctx, "test2@beaver.com")
+	_, _ = user.CreateTunnelUser(ctx, "test3@beaver.com")
+
+	tunnelUsers, err = user.ListTunnelUsers(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(tunnelUsers))
+	assert.Equal(t, "test@beaver.com", tunnelUsers[0].Email)
+	assert.Equal(t, "test2@beaver.com", tunnelUsers[1].Email)
+	assert.Equal(t, "test3@beaver.com", tunnelUsers[2].Email)
+}
