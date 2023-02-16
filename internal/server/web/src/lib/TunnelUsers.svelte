@@ -55,6 +55,28 @@
     }
   };
 
+  const rotateTunnelUserSecretKey = async (email: string) => {
+    try {
+      const res = await fetch("/api/v1/tunnel-users", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.status == 200) {
+        await getTunnelUsers();
+        toast.success(`New tunnel SecretKey generated for: ${data.email}`);
+      } else {
+        toast.error(data.error);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+    }
+  };
+
   onMount(() => {
     getTunnelUsers();
   });
@@ -146,6 +168,8 @@
                     class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
                   >
                     <button
+                      on:click={() =>
+                        rotateTunnelUserSecretKey(tunnelUser.email)}
                       class="text-gray-600 hover:text-gray-900 border rounded-lg px-2 py-1"
                       >Rotate Secret Key</button
                     >

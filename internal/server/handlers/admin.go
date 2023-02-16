@@ -113,6 +113,7 @@ func setupApiRoutes(e *echo.Echo) {
 	g.GET("/stats", serverStats, authRequiredMiddleware)
 	g.GET("/tunnel-users", getTunnelUsers, authRequiredMiddleware)
 	g.POST("/tunnel-users", createTunnelUser, authRequiredMiddleware)
+	g.PUT("/tunnel-users", rotateTunnelUserSecretKey, authRequiredMiddleware)
 }
 
 func loginApi(c echo.Context) error {
@@ -210,6 +211,20 @@ func createTunnelUser(c echo.Context) error {
 func getTunnelUsers(c echo.Context) error {
 	app := c.Get("app").(*app.App)
 	tunnelUsers, err := app.User.ListTunnelUsers(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, tunnelUsers)
+}
+
+func rotateTunnelUserSecretKey(c echo.Context) error {
+	var payload createTunnelUserPayload
+	if err := c.Bind(&payload); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid payload"})
+	}
+
+	app := c.Get("app").(*app.App)
+	tunnelUsers, err := app.User.RotateTunnelUserSecretKey(c.Request().Context(), payload.Email)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}

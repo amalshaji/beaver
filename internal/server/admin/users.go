@@ -57,7 +57,7 @@ func (u *User) CreateUser(ctx context.Context, email, password string, isSuperUs
 	adminUser.IsSuperUser = isSuperUser
 	adminUser.MarkAsNew()
 
-	if err := u.Store.Insert(badgerhold.NextSequence(), adminUser); err != nil {
+	if err := u.Store.Insert(badgerhold.NextSequence(), &adminUser); err != nil {
 		if errors.Is(err, badgerhold.ErrUniqueExists) {
 			return nil, ErrDuplicateAdminUser
 		}
@@ -172,7 +172,7 @@ func (u *User) CreateTunnelUser(ctx context.Context, email string) (*TunnelUser,
 	tunnelUser.RotateSecretKey()
 	tunnelUser.MarkAsNew()
 
-	if err := u.Store.Insert(badgerhold.NextSequence(), tunnelUser); err != nil {
+	if err := u.Store.Insert(badgerhold.NextSequence(), &tunnelUser); err != nil {
 		if errors.Is(err, badgerhold.ErrUniqueExists) {
 			return nil, ErrDuplicateTunnelUser
 		}
@@ -206,4 +206,25 @@ func (u *User) ListTunnelUsers(ctx context.Context) ([]TunnelUser, error) {
 		return []TunnelUser{}, nil
 	}
 	return tunnelUsers, nil
+}
+
+func (u *User) RotateTunnelUserSecretKey(ctx context.Context, email string) (*TunnelUser, error) {
+	tunnelUser, err := u.findTunnelUserByEmail(ctx, email)
+
+	if err != nil {
+		return nil, err
+	}
+
+	tunnelUser.RotateSecretKey()
+
+	u.Store.UpdateMatching(&TunnelUser{}, badgerhold.Where("Email").Eq(email), func(record interface{}) error {
+		update, ok := record.(*TunnelUser)
+		if !ok {
+			return fmt.Errorf("error while updating superuser")
+		}
+		update.SecretKey = tunnelUser.SecretKey
+		return nil
+	})
+
+	return tunnelUser, nil
 }
