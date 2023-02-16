@@ -54,7 +54,7 @@ jobs:
           sleep 3
 
       - name: Run tests
-        run: go test -v ./...
+        run: go test -v ./tests/...
 
       - name: Kill test servers
         run: |
