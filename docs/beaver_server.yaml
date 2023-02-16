@@ -1,6 +1,11 @@
-host: 0.0.0.0 # Address to bind the HTTP server
-port: 8080 # Port to bind the HTTP server
-domain: localhost # Domain on which the server will be running (eg: tunnel.example.com)
-secure: false # Whether the server runs under https
-timeout: 3000 # Time to wait before acquiring a WS connection to forward the request (milliseconds)
-idletimeout: 60000 # Time to wait before closing idle connection when there is enough idle connections (milliseconds)
+host : 0.0.0.0                     # Address to bind the HTTP server
+port : 8080                        # Port to bind the HTTP server
+domain: localhost                  # Domain on which the server will be running (eg: tunnel.example.com)            
+secure: false                      # Whether the server runs under https
+timeout : 3000                     # Time to wait before acquiring a WS connection to forward the request (milliseconds)
+idletimeout : 60000                # Time to wait before closing idle connection when there is enough idle connections (milliseconds)
+users:
+  - identifier: foo@bar.com
+    secretkey: ThisIsASecret
+  - identifier: max@xam.com
+    secretkey: ThisIsASecret@2

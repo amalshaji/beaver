@@ -2,8 +2,15 @@
 
 <img src="docs/beaver.png" height="250px">
 
+## Roadmap
+
 > **Warning**
-> This project is in a very early stage, If you find any bugs, please raise an issue.
+> This project is in a very early stage, may introduce breaking changes
+
+- [x] Simultaneous tunnel connections
+- [ ] Server dashboard
+- [ ] Server admin to manage users
+- [ ] Oauth2 authentication for tunnel client
 
 ## Client
 
@@ -48,28 +55,11 @@ tunnels:
 
 ## Server
 
+> **Warning**
+> A test server runs at x.amal.sh (replace client target to wss://x.amal.sh)
+> The server runs latest code from the main branch. So use at you own risk.
+
 Download the binary from [releases page](https://github.com/amalshaji/beaver/releases), or use the [docker image](https://hub.docker.com/r/amalshaji/beaver)
-
-```bash
-➜  beaver_server --help
-Tunnel local ports to public URLs
-
-Usage:
-  beaver_server [flags]
-  beaver_server [command]
-
-Available Commands:
-  completion      Generate the autocompletion script for the specified shell
-  createsuperuser Create a new super user
-  help            Help about any command
-  version         Print version number of beaver server
-
-Flags:
-      --config string   Path to config file (default "beaver_server.yaml")
-  -h, --help            help for beaver_server
-
-Use "beaver_server [command] --help" for more information about a command.
-```
 
 #### Deploy
 
@@ -119,6 +109,11 @@ domain: localhost               # Domain on which the server will be running (eg
 secure: false                   # Whether the server runs under https
 timeout : 3000                  # Time to wait before acquiring a WS connection to forward the request (milliseconds)
 idletimeout : 60000             # Time to wait before closing idle connection when there is enough idle connections (milliseconds)
+users:
+  - identifier: foo@bar.com
+    secretkey: ThisIsASecret
+  - identifier: max@xam.com
+    secretkey: ThisIsASecret@2
 ```
 
 ## Credits
