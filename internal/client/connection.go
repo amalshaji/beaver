@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/labstack/gommon/color"
 
 	"github.com/amalshaji/beaver/internal/utils"
 )
@@ -85,9 +86,12 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 				log.Fatal(err)
 			}
 		}()
-		bodyBytes, _ := io.ReadAll(res.Body)
+		// bodyBytes, _ := io.ReadAll(res.Body)
 		defer res.Body.Close()
-		log.Fatal(string(bodyBytes))
+
+		var body map[string]string
+		_ = json.NewDecoder(res.Body).Decode(&body)
+		log.Fatal(color.Red(body["error"]))
 	}
 
 	var httpScheme string
@@ -104,13 +108,12 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 	}
 
 	if isNewConnection(connection.pool.client.Config.subdomain) {
-		log.Printf("Tunnel connected %s://%s.%s%s -> http://localhost:%d\n",
+		log.Println(color.Green(fmt.Sprintf("Tunnel connected %s://%s.%s%s -> http://localhost:%d\n",
 			httpScheme,
 			connection.pool.client.Config.subdomain,
 			URL.Hostname(),
 			httpPort,
-			connection.pool.client.Config.port,
-		)
+			connection.pool.client.Config.port)))
 
 		// register the new connection
 		registerNewConnection(connection.pool.client.Config.subdomain)

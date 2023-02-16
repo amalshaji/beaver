@@ -21,13 +21,12 @@ var superUserCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 		var email string
-		var passwordRaw []byte
+		var password []byte
 
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Email: ")
 		email, _ = reader.ReadString('\n')
 		email = strings.TrimSuffix(email, "\n")
-		email = utils.SanitizeString(email)
 
 		if err := utils.ValidateEmail(email); err != nil {
 			fmt.Println(color.Red("Enter a valid email address"))
@@ -35,11 +34,10 @@ var superUserCmd = &cobra.Command{
 		}
 
 		fmt.Print("Password: ")
-		passwordRaw, _ = term.ReadPassword(0)
-		password := utils.SanitizeString(string(passwordRaw))
+		password, _ = term.ReadPassword(0)
 		fmt.Println(strings.Repeat("*", len(password)))
 
-		if err := utils.ValidatePassword(password); err != nil {
+		if err := utils.ValidatePassword(string(password)); err != nil {
 			fmt.Println(color.Red(err.Error()))
 			os.Exit(1)
 		}

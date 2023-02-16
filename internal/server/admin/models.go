@@ -11,8 +11,8 @@ import (
 var ErrWrongPassword = errors.New("wrong password")
 
 type BaseModel struct {
-	ID        uint64 `badgerhold:"key"`
-	CreatedAt time.Time
+	ID        uint64    `badgerhold:"key" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func (b *BaseModel) MarkAsNew() {
@@ -22,10 +22,10 @@ func (b *BaseModel) MarkAsNew() {
 type AdminUser struct {
 	BaseModel
 
-	Email        string `badgerhold:"unique"`
-	PasswordHash string
-	SessionToken string
-	IsSuperUser  bool
+	Email        string `badgerhold:"unique" json:"email"`
+	PasswordHash string `json:"-"`
+	SessionToken string `json:"-"`
+	IsSuperUser  bool   `json:"is_super_user"`
 }
 
 func (a *AdminUser) SetPassword(rawPassword string) error {
@@ -60,8 +60,8 @@ func (a *AdminUser) ResetSessionToken() error {
 type TunnelUser struct {
 	BaseModel
 
-	Email     string `badgerhold:"unique"`
-	SecretKey string
+	Email     string `badgerhold:"unique" json:"email"`
+	SecretKey string `json:"secret_key"`
 }
 
 func (t *TunnelUser) RotateSecretKey() error {
