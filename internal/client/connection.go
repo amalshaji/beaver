@@ -152,8 +152,8 @@ func (connection *Connection) serve(ctx context.Context) {
 		connection.status = IDLE
 		_, jsonRequest, err := connection.ws.ReadMessage()
 		if err != nil {
-			if connection.pool.client.Config.showWsReadErrors {
-				log.Println("Unable to read request", err)
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+				log.Fatal(color.Red("Connection closed by the server"))
 			}
 			break
 		}

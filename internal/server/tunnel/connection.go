@@ -274,6 +274,9 @@ func (connection *Connection) close() {
 	// Unlock a possible read() wild message
 	close(connection.nextResponse)
 
-	// Close the underlying TCP connection
-	connection.ws.Close()
+	// Send connection close message
+	connection.ws.WriteMessage(
+		websocket.CloseMessage,
+		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
+	)
 }

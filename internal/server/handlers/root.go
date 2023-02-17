@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/amalshaji/beaver/internal/server/app"
 	"github.com/labstack/echo/v4"
@@ -38,9 +40,18 @@ func Start(configFile string) {
 	_app.Start()
 
 	// Wait signals
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	<-sigCh
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
 
+	// Shutdown the app
 	_app.Shutdown()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Shutdown the server
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal(err)
+	}
 }
