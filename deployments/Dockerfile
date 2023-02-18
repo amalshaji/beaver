@@ -1,4 +1,4 @@
-FROM node:18.12.0-alpine as frontend-builder
+FROM node:18.12.1-alpine as frontend-builder
 
 WORKDIR /app
 
@@ -6,7 +6,7 @@ COPY internal/server/web .
 
 RUN npm i -g pnpm && pnpm install && pnpm run build
 
-FROM golang:1.19 AS builder
+FROM golang:1.20.1 AS builder
 
 WORKDIR /app
 
@@ -20,9 +20,9 @@ RUN mkdir -p /app/internal/server/web/dist
 
 COPY --from=frontend-builder /app/dist /app/internal/server/web/dist
 
-RUN go build -ldflags="-s -w" -o beaver_server ./cmd/beaver_server
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o beaver_server ./cmd/beaver_server
 
-FROM alpine:3.17.1  
+FROM alpine:3.17.2  
 
 WORKDIR /app
 
