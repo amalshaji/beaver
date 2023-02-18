@@ -41,3 +41,17 @@ func ProxyError(c echo.Context, err error) error {
 func ProxyErrorf(c echo.Context, format string, args ...interface{}) error {
 	return ProxyError(c, fmt.Errorf(format, args...))
 }
+
+func HttpBadRequest(c echo.Context, format string, args ...interface{}) error {
+	return c.JSON(
+		http.StatusBadRequest,
+		map[string]string{"error": fmt.Errorf(format, args...).Error()},
+	)
+}
+
+func HttpUnauthorized(c echo.Context, format string, args ...interface{}) error {
+	return c.JSON(
+		http.StatusUnauthorized,
+		map[string]string{"error": fmt.Errorf(format, args...).Error()},
+	)
+}
