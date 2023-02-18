@@ -12,3 +12,4 @@ dist
 internal/server/web/node_modules
 internal/server/web/dist
 playwright-report
+.git
