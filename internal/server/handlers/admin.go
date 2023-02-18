@@ -99,7 +99,7 @@ func authRequiredMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		err := authRequired(c)
 		if err != nil {
-			return c.JSON(http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return utils.HttpUnauthorized(c, err.Error())
 		}
 		return next(c)
 	}
@@ -120,14 +120,14 @@ func loginApi(c echo.Context) error {
 	var p LoginPayload
 
 	if err := c.Bind(&p); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid payload"})
+		return utils.HttpBadRequest(c, "invalid payload")
 	}
 
 	app := c.Get("app").(*app.App)
 
 	token, err := app.User.Login(c.Request().Context(), p.Email, p.Password)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return utils.HttpBadRequest(c, err.Error())
 	}
 
 	cookie := new(http.Cookie)
@@ -149,7 +149,7 @@ func logoutApi(c echo.Context) error {
 	sessionCookie, err := c.Request().Cookie("beaver_session")
 
 	if err != nil || sessionCookie == nil || sessionCookie.Value == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid session"})
+		return utils.HttpBadRequest(c, "invalid session")
 	}
 
 	app := c.Get("app").(*app.App)
@@ -157,7 +157,7 @@ func logoutApi(c echo.Context) error {
 	err = app.User.Logout(c.Request().Context(), sessionCookie.Value)
 
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return utils.HttpBadRequest(c, err.Error())
 	}
 
 	sessionCookie.Value = ""
@@ -195,14 +195,14 @@ type createTunnelUserPayload struct {
 func createTunnelUser(c echo.Context) error {
 	var payload createTunnelUserPayload
 	if err := c.Bind(&payload); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid payload"})
+		return utils.HttpBadRequest(c, "invalid payload")
 	}
 
 	app := c.Get("app").(*app.App)
 
 	tunnelUser, err := app.User.CreateTunnelUser(c.Request().Context(), payload.Email)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return utils.HttpBadRequest(c, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, tunnelUser)
@@ -212,7 +212,7 @@ func getTunnelUsers(c echo.Context) error {
 	app := c.Get("app").(*app.App)
 	tunnelUsers, err := app.User.ListTunnelUsers(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return utils.HttpBadRequest(c, err.Error())
 	}
 	return c.JSON(http.StatusOK, tunnelUsers)
 }
@@ -220,13 +220,13 @@ func getTunnelUsers(c echo.Context) error {
 func rotateTunnelUserSecretKey(c echo.Context) error {
 	var payload createTunnelUserPayload
 	if err := c.Bind(&payload); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid payload"})
+		return utils.HttpBadRequest(c, "invalid payload")
 	}
 
 	app := c.Get("app").(*app.App)
 	tunnelUsers, err := app.User.RotateTunnelUserSecretKey(c.Request().Context(), payload.Email)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return utils.HttpBadRequest(c, err.Error())
 	}
 	return c.JSON(http.StatusOK, tunnelUsers)
 }
