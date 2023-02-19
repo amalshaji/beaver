@@ -95,7 +95,14 @@ func GetTunnelHandler(app *app.App) *echo.Echo {
 		}
 	})
 
-	tunnelRouter.Any("*", request)
+	tunnelRouter.GET("*", request)
+	tunnelRouter.POST("*", request)
+	tunnelRouter.PUT("*", request)
+	tunnelRouter.PATCH("*", request)
+	tunnelRouter.DELETE("*", request)
+	tunnelRouter.OPTIONS("*", request)
+	tunnelRouter.HEAD("*", request)
+	tunnelRouter.CONNECT("*", request)
 
 	return tunnelRouter
 }
