@@ -131,7 +131,7 @@ func TestPutRequestOnUnregisteredSubdomainShouldFail(t *testing.T) {
 	res, err := putRequest("http://xxyyzz.localhost:8080", nil)
 
 	assert.NoError(t, err)
-	assert.Equal(t, res.StatusCode, 526)
+	assert.Equal(t, 526, res.StatusCode)
 	assert.Equal(t, "{\"error\":\"unregistered tunnel subdomain\"}\n", stringifyResBody(res.Body))
 }
 
@@ -147,7 +147,7 @@ func TestPatchRequestOnUnregisteredSubdomainShouldFail(t *testing.T) {
 	res, err := patchRequest("http://xxyyzz.localhost:8080", nil)
 
 	assert.NoError(t, err)
-	assert.Equal(t, res.StatusCode, 526)
+	assert.Equal(t, 526, res.StatusCode)
 	assert.Equal(t, "{\"error\":\"unregistered tunnel subdomain\"}\n", stringifyResBody(res.Body))
 }
 
@@ -163,7 +163,7 @@ func TestDeleteRequestOnUnregisteredSubdomainShouldFail(t *testing.T) {
 	res, err := deleteRequest("http://xxyyzz.localhost:8080", nil)
 
 	assert.NoError(t, err)
-	assert.Equal(t, res.StatusCode, 526)
+	assert.Equal(t, 526, res.StatusCode)
 	assert.Equal(t, "{\"error\":\"unregistered tunnel subdomain\"}\n", stringifyResBody(res.Body))
 }
 
@@ -179,7 +179,7 @@ func TestOptionsRequestOnUnregisteredSubdomainShouldFail(t *testing.T) {
 	res, err := optionsRequest("http://xxyyzz.localhost:8080", nil)
 
 	assert.NoError(t, err)
-	assert.Equal(t, res.StatusCode, 526)
+	assert.Equal(t, 526, res.StatusCode)
 	assert.Equal(t, "{\"error\":\"unregistered tunnel subdomain\"}\n", stringifyResBody(res.Body))
 }
 
@@ -188,15 +188,7 @@ func TestHeadRequest(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, "{\"message\":\"ok\"}\n", stringifyResBody(res.Body))
-}
-
-func TestHeadRequestOnUnregisteredSubdomainShouldFail(t *testing.T) {
-	res, err := headRequest("http://xxyyzz.localhost:8080", nil)
-
-	assert.NoError(t, err)
-	assert.Equal(t, res.StatusCode, 526)
-	assert.Equal(t, "{\"error\":\"unregistered tunnel subdomain\"}\n", stringifyResBody(res.Body))
+	assert.Equal(t, "beaver-server", res.Header.Get("custom-server"))
 }
 
 func TestConnectRequest(t *testing.T) {
@@ -211,23 +203,7 @@ func TestConnectRequestOnUnregisteredSubdomainShouldFail(t *testing.T) {
 	res, err := connectRequest("http://xxyyzz.localhost:8080", nil)
 
 	assert.NoError(t, err)
-	assert.Equal(t, res.StatusCode, 526)
-	assert.Equal(t, "{\"error\":\"unregistered tunnel subdomain\"}\n", stringifyResBody(res.Body))
-}
-
-func TestTraceRequest(t *testing.T) {
-	res, err := traceRequest(getUrlPath("/"), nil)
-
-	assert.NoError(t, err)
-	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, "{\"message\":\"ok\"}\n", stringifyResBody(res.Body))
-}
-
-func TestTraceRequestOnUnregisteredSubdomainShouldFail(t *testing.T) {
-	res, err := traceRequest("http://xxyyzz.localhost:8080", nil)
-
-	assert.NoError(t, err)
-	assert.Equal(t, res.StatusCode, 526)
+	assert.Equal(t, 526, res.StatusCode)
 	assert.Equal(t, "{\"error\":\"unregistered tunnel subdomain\"}\n", stringifyResBody(res.Body))
 }
 

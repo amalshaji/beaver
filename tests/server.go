@@ -37,14 +37,11 @@ func deleteRequestHandler(c echo.Context) error {
 }
 
 func headRequestHandler(c echo.Context) error {
-	return c.JSON(200, map[string]string{"message": "ok"})
+	c.Response().Header().Set("custom-server", "beaver-server")
+	return c.NoContent(200)
 }
 
 func connectRequestHandler(c echo.Context) error {
-	return c.JSON(200, map[string]string{"message": "ok"})
-}
-
-func traceRequestHandler(c echo.Context) error {
 	return c.JSON(200, map[string]string{"message": "ok"})
 }
 
@@ -72,7 +69,6 @@ func main() {
 	app.OPTIONS("/", optionsRequestHandler)
 	app.HEAD("/", headRequestHandler)
 	app.CONNECT("/", connectRequestHandler)
-	app.TRACE("/", traceRequestHandler)
 
 	app.GET("/redirect-302", redirect302RequestHandler)
 	app.GET("/redirect-307", redirect307RequestHandler)
