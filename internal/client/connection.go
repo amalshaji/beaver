@@ -108,12 +108,16 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 	}
 
 	if isNewConnection(connection.pool.client.Config.subdomain) {
-		log.Println(color.Green(fmt.Sprintf("Tunnel connected %s://%s.%s%s -> http://localhost:%d\n",
-			httpScheme,
-			connection.pool.client.Config.subdomain,
-			URL.Hostname(),
-			httpPort,
-			connection.pool.client.Config.port)))
+		log.Println(
+			color.Green(
+				fmt.Sprintf("Tunnel connected %s://%s.%s%s -> http://localhost:%d",
+					httpScheme,
+					connection.pool.client.Config.subdomain,
+					URL.Hostname(),
+					httpPort,
+					connection.pool.client.Config.port),
+			),
+		)
 
 		// register the new connection
 		registerNewConnection(connection.pool.client.Config.subdomain)
