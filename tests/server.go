@@ -36,6 +36,18 @@ func deleteRequestHandler(c echo.Context) error {
 	return c.JSON(200, map[string]string{"message": "ok"})
 }
 
+func headRequestHandler(c echo.Context) error {
+	return c.JSON(200, map[string]string{"message": "ok"})
+}
+
+func connectRequestHandler(c echo.Context) error {
+	return c.JSON(200, map[string]string{"message": "ok"})
+}
+
+func traceRequestHandler(c echo.Context) error {
+	return c.JSON(200, map[string]string{"message": "ok"})
+}
+
 func optionsRequestHandler(c echo.Context) error {
 	return c.JSON(200, map[string]string{"message": "ok"})
 }
@@ -58,6 +70,9 @@ func main() {
 	app.PATCH("/", patchRequestHandler)
 	app.DELETE("/", deleteRequestHandler)
 	app.OPTIONS("/", optionsRequestHandler)
+	app.HEAD("/", headRequestHandler)
+	app.CONNECT("/", connectRequestHandler)
+	app.TRACE("/", traceRequestHandler)
 
 	app.GET("/redirect-302", redirect302RequestHandler)
 	app.GET("/redirect-307", redirect307RequestHandler)
