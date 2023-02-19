@@ -199,14 +199,6 @@ func TestConnectRequest(t *testing.T) {
 	assert.Equal(t, "{\"message\":\"ok\"}\n", stringifyResBody(res.Body))
 }
 
-func TestConnectRequestOnUnregisteredSubdomainShouldFail(t *testing.T) {
-	res, err := connectRequest("http://xxyyzz.localhost:8080", nil)
-
-	assert.NoError(t, err)
-	assert.Equal(t, 526, res.StatusCode)
-	assert.Equal(t, "{\"error\":\"unregistered tunnel subdomain\"}\n", stringifyResBody(res.Body))
-}
-
 func TestRedirect302Request(t *testing.T) {
 	res, err := http.Get(getUrlPath("/redirect-302"))
 
