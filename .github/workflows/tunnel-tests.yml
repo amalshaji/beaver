@@ -19,11 +19,19 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "1.20.1"
+          cache: true
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7.27.1
 
       - name: Setup node
         uses: actions/setup-node@v3
         with:
           node-version: 18.12.1
+          cache: "pnpm"
+          cache-dependency-path: "**/pnpm-lock.yaml"
 
       - name: Add hosts to /etc/hosts
         run: |
@@ -33,7 +41,7 @@ jobs:
       - name: Build frontend
         run: |
           npm i -g pnpm
-          pnpm install --dir internal/server/web build && pnpm run --dir internal/server/web build
+          pnpm install --dir internal/server/web --frozen-lockfile && pnpm run --dir internal/server/web build
 
       - name: Build client and server
         run: |
