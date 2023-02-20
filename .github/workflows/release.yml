@@ -1,4 +1,4 @@
-name: goreleaser
+name: Publish packages
 
 on:
   push:
@@ -19,13 +19,34 @@ jobs:
         with:
           fetch-depth: 0
       - run: git fetch --force --tags
-      - uses: actions/setup-go@v3
+
+      - name: Setup go
+        uses: actions/setup-go@v3
         with:
           go-version: ">=1.20"
           cache: true
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7.27.1
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.12.1
+          cache: "pnpm"
+          cache-dependency-path: "**/pnpm-lock.yaml"
+
+      - name: Build frontend
+        run: |
+          npm i -g pnpm
+          pnpm install --dir internal/server/web --frozen-lockfile && pnpm run --dir internal/server/web build
+
       # More assembly might be required: Docker logins, GPG, etc. It all depends
       # on your needs.
-      - uses: goreleaser/goreleaser-action@v4
+      - name: Publish packages
+        uses: goreleaser/goreleaser-action@v4
         with:
           # either 'goreleaser' (default) or 'goreleaser-pro':
           distribution: goreleaser
