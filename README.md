@@ -48,6 +48,8 @@ tunnels:
 
 ## Server
 
+> [Deploying the server using caddy and cloudflare](https://github.com/amalshaji/beaver/wiki/Deploying-the-server-using-caddy)
+
 Download the binary from [releases page](https://github.com/amalshaji/beaver/releases), or use the [docker image](https://hub.docker.com/r/amalshaji/beaver)
 
 ```bash
@@ -85,7 +87,7 @@ Use "beaver_server [command] --help" for more information about a command.
     docker run \
       -v $PWD/docs/beaver_server.yaml:/app/config/beaver_server.yaml \
       -v $PWD/data:/app/data/ \
-      -p 8080:8080 --restart unless-stopped amalshaji/beaver:latest
+      -p 8080:8080 --restart unless-stopped amalshaji/beaver:0.0.1
     ```
 
     Replace `$PWD/docs/beaver_server.yaml` with path to your config file
@@ -95,7 +97,7 @@ Use "beaver_server [command] --help" for more information about a command.
     ```yaml
     services:
       beaver:
-        image: amalshaji/beaver:latest
+        image: amalshaji/beaver:0.0.1
         volumes:
           - ./docs/beaver_server.yaml:/app/config/beaver_server.yaml
           - ./data:/app/data/
