@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: 18.12.1
           cache: "pnpm"
-          cache-dependency-path: "**/package-lock.json"
+          cache-dependency-path: "**/pnpm-lock.yaml"
 
       - name: Add hosts to /etc/hosts
         run: |
