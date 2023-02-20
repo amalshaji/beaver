@@ -22,6 +22,7 @@ Available Commands:
   help        Help about any command
   http        Tunnel local http servers
   start       Start tunnels defined in the config file
+  version     Print version number of beaver client
 
 Flags:
       --config string   Path to the client config file (default "/Users/amalshaji/.beaver/beaver_client.yaml")
