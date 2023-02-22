@@ -121,6 +121,11 @@ func (connection *Connection) read() {
 func (connection *Connection) ProxyRequest(c echo.Context) (err error) {
 	log.Printf("proxy request to %s", connection.pool.ID)
 
+	// Set host header
+	if c.Request().Header.Get("Host") == "" && c.Request().Host != "" {
+		c.Request().Header.Set("Host", c.Request().Host)
+	}
+
 	// [1]: Serialize HTTP request
 	jsonReq, err := json.Marshal(utils.SerializeHTTPRequest(c.Request()))
 	if err != nil {
