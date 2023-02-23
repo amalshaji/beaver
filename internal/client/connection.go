@@ -181,6 +181,9 @@ func (connection *Connection) serve(ctx context.Context) {
 			break
 		}
 
+		// Update host value
+		req.Host = req.Header.Get("Host")
+
 		// Pipe request body
 		_, bodyReader, err := connection.ws.NextReader()
 		if err != nil {
