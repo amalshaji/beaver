@@ -53,3 +53,14 @@ changelog:
 release:
   name_template: "v{{ .Version }}"
   draft: true
+brews:
+  - name: beaver
+    ids:
+      - beaver
+    homepage: https://github.com/amalshaji/beaver
+    tap:
+      owner: amalshaji
+      name: homebrew-taps
+    commit_author:
+      name: Amal Shaji
+      email: amalshajid@gmail.com
