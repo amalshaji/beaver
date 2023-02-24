@@ -14,24 +14,8 @@ builds:
     ldflags:
       - -s -w -X main.build={{.Version}}
 
-  - id: "beaver_server"
-    main: ./cmd/beaver_server
-    binary: "beaver_server"
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-      - windows
-      - darwin
-    goarch:
-      - amd64
-      - arm64
-    ldflags:
-      - -s -w -X main.build={{.Version}}
-
 archives:
   - format: binary
-    # this name template makes the OS and Arch compatible with the results of uname.
     name_template: >-
       {{ .Binary }}_
       {{- .Version }}_
@@ -40,19 +24,34 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+  - format: zip
+    name_template: >-
+      {{ .Binary }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
 checksum:
   name_template: "checksums.txt"
+
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
+
 changelog:
   sort: asc
   filters:
     exclude:
       - "^docs:"
       - "^test:"
+
 release:
   name_template: "v{{ .Version }}"
   draft: true
+
 brews:
   - name: beaver
     ids:
@@ -64,3 +63,23 @@ brews:
     commit_author:
       name: Amal Shaji
       email: amalshajid@gmail.com
+
+dockers:
+  - image_templates:
+      - "amalshaji/beaver:{{ .Version }}-amd64"
+    use: buildx
+    dockerfile: deployments/Dockerfile
+    build_flag_templates:
+      - "--platform=linux/amd64"
+  - image_templates:
+      - "amalshaji/beaver:{{ .Version }}-arm64"
+    use: buildx
+    goarch: arm64
+    dockerfile: deployments/Dockerfile
+    build_flag_templates:
+      - "--platform=linux/arm64"
+docker_manifests:
+  - name_template: "amalshaji/beaver:{{ .Version }}"
+    image_templates:
+      - "amalshaji/beaver:{{ .Version }}-amd64"
+      - "amalshaji/beaver:{{ .Version }}-arm64"
