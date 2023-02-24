@@ -30,8 +30,10 @@ var (
 			}
 		},
 	}
-	ErrUnableToCreateConfigFile        = errors.New("unable to create the config file")
-	ConfigTemplate              string = `
+	ErrUnableToCreateConfigFile = errors.New("unable to create the config file")
+)
+
+var ConfigTemplate string = `
 target: 
 secretkey:
 tunnels:
@@ -39,7 +41,6 @@ tunnels:
     subdomain: subdomain-1
     port: 8000
 `
-)
 
 func createConfigFile() error {
 	if initConfig {
