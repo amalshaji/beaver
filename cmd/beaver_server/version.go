@@ -6,11 +6,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const VERSION = "v0.0.1"
+const VERSION = "0.1.0"
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print version number of beaver server",
+	Short: "Print beaver server version",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Beaver server %s\n", VERSION)
 	},
