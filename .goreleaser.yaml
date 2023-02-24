@@ -31,7 +31,6 @@ builds:
 
 archives:
   - format: binary
-    # this name template makes the OS and Arch compatible with the results of uname.
     name_template: >-
       {{ .Binary }}_
       {{- .Version }}_
@@ -40,19 +39,34 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+  - format: zip
+    name_template: >-
+      {{ .Binary }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
 checksum:
   name_template: "checksums.txt"
+
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
+
 changelog:
   sort: asc
   filters:
     exclude:
       - "^docs:"
       - "^test:"
+
 release:
   name_template: "v{{ .Version }}"
   draft: true
+
 brews:
   - name: beaver
     ids:
