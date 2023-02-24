@@ -61,6 +61,7 @@ brews:
     tap:
       owner: amalshaji
       name: homebrew-taps
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     commit_author:
       name: Amal Shaji
       email: amalshajid@gmail.com
