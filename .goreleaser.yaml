@@ -15,16 +15,6 @@ builds:
       - -s -w -X main.build={{.Version}}
 
 archives:
-  - format: binary
-    name_template: >-
-      {{ .Binary }}_
-      {{- .Version }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
-
   - format: zip
     name_template: >-
       {{ .Binary }}_
@@ -34,7 +24,7 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    id: homebrew
+    id: beaver
 
 checksum:
   name_template: "checksums.txt"
@@ -52,11 +42,15 @@ changelog:
 release:
   name_template: "v{{ .Version }}"
   draft: true
+  footer: |
+    ## Server docker images
+
+    https://hub.docker.com/r/amalshaji/beaver/tags
 
 brews:
   - name: beaver
     ids:
-      - homebrew
+      - beaver
     homepage: https://github.com/amalshaji/beaver
     tap:
       owner: amalshaji
