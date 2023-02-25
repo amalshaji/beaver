@@ -1,86 +1,59 @@
 # Beaver
 
-<img src="docs/beaver.png" height="250px">
+
+
+<p align="center">
+    <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/amalshaji/beaver/unit-tests.yml">
+    <img alt="GitHub" src="https://img.shields.io/github/license/amalshaji/beaver">
+    <img alt="GitHub release (latest by date)" src="https://img.shields.io/github/v/release/amalshaji/beaver">
+</p>
+
+<p align="center">
+    <img src="docs/beaver.png" height="250px">
+</p>
 
 > **Warning**
 > This project is in a very early stage, If you find any bugs, please raise an issue.
 
 ## Client
 
-Download the binary from [releases page](https://github.com/amalshaji/beaver/releases).
+### Install
 
-```bash
-➜  beaver --help
-Tunnel local ports to public URLs
+Using homebrew
 
-Usage:
-  beaver [flags]
-  beaver [command]
-
-Available Commands:
-  completion  Generate the autocompletion script for the specified shell
-  help        Help about any command
-  http        Tunnel local http servers
-  start       Start tunnels defined in the config file
-  version     Print version number of beaver client
-
-Flags:
-      --config string   Path to the client config file (default "/Users/amalshaji/.beaver/beaver_client.yaml")
-  -h, --help            help for beaver
-
-Use "beaver [command] --help" for more information about a command.
+```shell
+➜ brew tap amalshaji/taps
+➜ brew install beaver
 ```
 
-#### Config
+Or, download the binary from the [releases page](https://github.com/amalshaji/beaver/releases)
+
+### Usage
+
+Once the client is installed, run:
+
+```shell
+➜ beaver config --init
+```
+
+This creates a basic config at `$HOME/.beaver/beaver_client.yaml`,
 
 ```yaml
-target: ws://localhost:8080     # Endpoints to connect to
-poolidlesize: 1                 # Default number of concurrent open (TCP) connections to keep idle per WSP server
-poolmaxsize: 100                # Maximum number of concurrent open (TCP) connections per WSP server
-secretkey: ThisIsASecret        # secret key that must match the value set in servers configuration
+target: 
+secretkey: 
 tunnels:
-  - name: tp1                   # Tunnel name
-    subdomain: test-subdomain-1 # Subdomain to create the tunnel connection at (optional)
-    port: 8000                  # Local server port
-  - name: tp2
-    subdomain: test-subdomain-1
-    port: 9000
+  - name: tunnel-1
+    subdomain: subdomain-1
+    port: 8000
 ```
+
+Update your `target` and `secretKey`, and you're ready to go.
 
 ## Server
 
 > [Deploying the server using caddy and cloudflare](https://github.com/amalshaji/beaver/wiki/Deploying-the-server-using-caddy)
 
-Download the binary from [releases page](https://github.com/amalshaji/beaver/releases), or use the [docker image](https://hub.docker.com/r/amalshaji/beaver)
-
-```bash
-➜  beaver_server --help
-Tunnel local ports to public URLs
-
-Usage:
-  beaver_server [flags]
-  beaver_server [command]
-
-Available Commands:
-  completion      Generate the autocompletion script for the specified shell
-  createsuperuser Create a new super user
-  help            Help about any command
-  version         Print version number of beaver server
-
-Flags:
-      --config string   Path to config file (default "beaver_server.yaml")
-  -h, --help            help for beaver_server
-
-Use "beaver_server [command] --help" for more information about a command.
-```
-
-#### Deploy
-
-1. Using the binary
-
-    ```shell
-    beaver_server --config docs/beaver_server.yaml
-    ```
+### Deploy
 
 1. Using docker
 
@@ -113,9 +86,11 @@ Use "beaver_server [command] --help" for more information about a command.
     docker compose up -d
     ```
 
-#### Config
+### Config
 
 ```yaml
+# beaver_server.yaml
+
 host : 0.0.0.0                  # Address to bind the HTTP server
 port : 8080                     # Port to bind the HTTP server
 domain: localhost               # Domain on which the server will be running (eg: tunnel.example.com)            
