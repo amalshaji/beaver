@@ -167,6 +167,7 @@ func (s *Server) DispatchConnections() {
 			for _, conn := range pool.connections {
 				if conn.status == Idle {
 					connection = conn
+					break
 				}
 			}
 			s.Lock.RUnlock()
