@@ -221,24 +221,20 @@ func (s *Server) Shutdown() {
 }
 
 func (s *Server) GetOrCreatePoolForUser(subdomain, localServer, userIdentifier string, id PoolID) (*Pool, error) {
-	var pool *Pool
-
 	// There is no need to create a new pool,
 	// if it is already registered in current pools.
 	p, ok := s.Pools[subdomain]
 	if !ok {
-		pool = NewPool(s, id, subdomain, localServer, userIdentifier)
+		pool := NewPool(s, id, subdomain, localServer, userIdentifier)
 		s.Pools[subdomain] = pool
 		return pool, nil
 	}
 
-	if p.ID == id {
-		pool = p
-	} else {
+	if p.ID != id {
 		return nil, fmt.Errorf("subdomain already in use")
 	}
 
-	return pool, nil
+	return p, nil
 }
 
 func (s *Server) GetDestinationURL(subdomain string) string {
