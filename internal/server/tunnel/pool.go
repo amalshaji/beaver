@@ -78,7 +78,7 @@ func (pool *Pool) Clean() {
 			if idle > pool.size {
 				// We have enough idle connections in the pool.
 				// Terminate the connection if it is idle since more that IdleTimeout
-				if int(time.Now().Sub(connection.idleSince).Seconds())*1000 > pool.server.Config.IdleTimeout {
+				if int(time.Since(connection.idleSince).Seconds())*1000 > pool.server.Config.IdleTimeout {
 					connection.close()
 				}
 			}
