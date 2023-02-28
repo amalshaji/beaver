@@ -1,0 +1,30 @@
+[entryPoints]
+  [entryPoints.beaver]
+    address = ":80"
+  [entryPoints.beaver.http]
+    [entryPoints.beaver.http.redirections]
+      [entryPoints.beaver.http.redirections.entryPoint]
+        to = "websecure"
+        scheme = "https"
+
+  [entryPoints.websecure]
+    address = ":443"
+
+[log]
+level = "DEBUG"
+
+[accessLog]
+
+
+[providers]
+  [providers.docker]
+    exposedByDefault = false
+
+[certificatesResolvers.letsencrypt.acme]
+  email = "${ACME_EMAIL}"
+  storage = "/certificates/acme.json"
+  keyType = "EC384"
+  caServer = "https://acme-v02.api.letsencrypt.org/directory"
+  [certificatesResolvers.letsencrypt.acme.dnsChallenge]
+    provider = "${DNS_CHALLENGE_PROVIDER}"
+    delayBeforeCheck = 0

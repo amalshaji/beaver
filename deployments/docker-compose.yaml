@@ -1,0 +1,29 @@
+services:
+  beaver:
+    image: amalshaji/beaver:main
+    volumes:
+      - ./beaver_server.yaml:/app/config/beaver_server.yaml
+      - ./data:/app/data/
+    expose:
+      - 8080
+    env_file:
+      - creds.env
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.beaver.tls=true
+      - traefik.http.routers.beaver.tls.certresolver=letsencrypt
+      - traefik.http.routers.beaver.rule=HostRegexp(`${TUNNEL_DOMAIN}`, `{subdomain:[a-zA-Z0-9-]+}.${TUNNEL_DOMAIN}`)
+  traefik:
+    image: traefik:v2.9.8
+    env_file:
+      - creds.env
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik-public-certificates:/certificates
+      - ./traefik.toml:/etc/traefik/traefik.toml
+    labels:
+      - traefik.enable=true
