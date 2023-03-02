@@ -6,24 +6,37 @@ services:
       - ./data:/app/data/
     expose:
       - 8080
-    env_file:
-      - creds.env
     restart: unless-stopped
     labels:
       - traefik.enable=true
       - traefik.http.routers.beaver.tls=true
       - traefik.http.routers.beaver.tls.certresolver=letsencrypt
-      - traefik.http.routers.beaver.rule=HostRegexp(`${TUNNEL_DOMAIN}`, `{subdomain:[a-zA-Z0-9-]+}.${TUNNEL_DOMAIN}`)
+      - traefik.http.routers.beaver.rule=HostRegexp(`${TUNNEL_DOMAIN}`, `{subdomain:[a-z0-9]+([-][a-z0-9]+)*}.${TUNNEL_DOMAIN}`)
+      - traefik.http.routers.beaver.tls.domains[0].main=${TUNNEL_DOMAIN}
+      - traefik.http.routers.beaver.tls.domains[0].sans=*.${TUNNEL_DOMAIN}
   traefik:
     image: traefik:v2.9.8
     env_file:
-      - creds.env
+      - .env
     ports:
       - 80:80
       - 443:443
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik-public-certificates:/certificates
-      - ./traefik.toml:/etc/traefik/traefik.toml
     labels:
       - traefik.enable=true
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --log.level=DEBUG
+      - --accesslog
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/certificates/acme.json
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=${DNS_PROVIDER}
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=0
