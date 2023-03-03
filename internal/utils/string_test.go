@@ -52,3 +52,20 @@ func TestValidatePassword(t *testing.T) {
 		assert.ErrorIs(t, ValidatePassword(tc.input), tc.want)
 	}
 }
+
+func TestValidateSubdomain(t *testing.T) {
+	tests := []struct {
+		input string
+		want  error
+	}{
+		{input: "beaver-test-dev", want: nil},
+		{input: "beaver.test", want: ErrInvalidSubdomain},
+		{input: "-beaver", want: ErrInvalidSubdomain},
+		{input: "beaver-", want: ErrInvalidSubdomain},
+		{input: "beaver_test", want: ErrInvalidSubdomain},
+	}
+
+	for _, tc := range tests {
+		assert.ErrorIs(t, ValidateSubdomain(tc.input), tc.want)
+	}
+}

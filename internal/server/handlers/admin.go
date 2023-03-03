@@ -25,6 +25,10 @@ func register(c echo.Context) error {
 	app := c.Get("app").(*app.App)
 
 	subdomain := c.Request().Header.Get("X-TUNNEL-SUBDOMAIN")
+	if err := utils.ValidateSubdomain(subdomain); err != nil {
+		return utils.ProxyErrorf(c, "invalid subdomain: '%s'; %s", subdomain, utils.ErrInvalidSubdomain.Error())
+	}
+
 	localServer := c.Request().Header.Get("X-LOCAL-SERVER")
 
 	secretKey := c.Request().Header.Get("X-SECRET-KEY")
