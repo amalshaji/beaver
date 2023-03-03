@@ -1,9 +1,11 @@
 package client
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
+	"github.com/amalshaji/beaver/internal/utils"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	uuid "github.com/nu7hatch/gouuid"
 
@@ -44,9 +46,11 @@ func (config *Config) setDefaults() {
 	if config.Target == "" {
 		config.Target = "wss://x.amal.sh"
 	}
+
 	if config.PoolIdleSize == 0 {
 		config.PoolIdleSize = 1
 	}
+
 	if config.PoolMaxSize == 0 {
 		config.PoolMaxSize = 100
 	}
@@ -78,7 +82,13 @@ func LoadConfiguration(configFile string, subdomain string, port int, showWsRead
 		if err != nil {
 			panic(err)
 		}
+	} else {
+		err = utils.ValidateSubdomain(subdomain)
+		if err != nil {
+			return Config{}, fmt.Errorf("invalid subdomain: '%s'; %s", subdomain, err.Error())
+		}
 	}
+
 	config.subdomain = subdomain
 	config.port = port
 	config.showWsReadErrors = showWsReadErrors

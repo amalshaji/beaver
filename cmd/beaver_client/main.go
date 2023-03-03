@@ -17,7 +17,7 @@ func startTunnels(tunnels []client.TunnelConfig) {
 	for _, proxyTunnel := range tunnels {
 		config, err := client.LoadConfiguration(configFile, proxyTunnel.Subdomain, proxyTunnel.Port, showWsReadErrors)
 		if err != nil {
-			log.Fatalf("Unable to load configuration : %s", err)
+			log.Fatalf("Unable to load configuration: %s", err)
 		}
 		proxy := client.NewClient(&config)
 		proxies = append(proxies, proxy)
