@@ -1,6 +1,6 @@
 services:
   beaver:
-    image: amalshaji/beaver:main
+    image: amalshaji/beaver:0.2.0
     volumes:
       - ./beaver_server.yaml:/app/config/beaver_server.yaml
       - ./data:/app/data/

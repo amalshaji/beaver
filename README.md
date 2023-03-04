@@ -61,7 +61,7 @@ Update your `target` and `secretKey`, and you're ready to go.
     docker run \
       -v $PWD/docs/beaver_server.yaml:/app/config/beaver_server.yaml \
       -v $PWD/data:/app/data/ \
-      -p 8080:8080 --restart unless-stopped amalshaji/beaver:0.1.0
+      -p 8080:8080 --restart unless-stopped amalshaji/beaver:0.2.0
     ```
 
     Replace `$PWD/docs/beaver_server.yaml` with path to your config file
@@ -71,7 +71,7 @@ Update your `target` and `secretKey`, and you're ready to go.
     ```yaml
     services:
       beaver:
-        image: amalshaji/beaver:0.1.0
+        image: amalshaji/beaver:0.2.0
         volumes:
           - ./docs/beaver_server.yaml:/app/config/beaver_server.yaml
           - ./data:/app/data/
