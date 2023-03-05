@@ -27,14 +27,15 @@ func StartServer(connectionLogger *ConnectionLogger) *echo.Echo {
 			return utils.HttpBadRequest(c, err.Error())
 		}
 
-		var s []map[string]interface{}
-		for e := logs.Front(); e != nil; e = e.Next() {
-			requestDataBytes := e.Value.(map[string][]uint8)["request"]
-			responseDataBytes := e.Value.(map[string][]uint8)["response"]
+		if logs.Len() == 0 {
+			return c.JSON(200, []string{})
+		}
 
-			s = append(s, map[string]interface{}{
-				"request":  string(requestDataBytes),
-				"response": string(responseDataBytes),
+		var s []map[string]string
+		for e := logs.Front(); e != nil; e = e.Next() {
+			s = append(s, map[string]string{
+				"request":  e.Value.(map[string]string)["request"],
+				"response": e.Value.(map[string]string)["response"],
 			})
 		}
 

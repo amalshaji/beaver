@@ -71,9 +71,9 @@ func (c *ConnectionLogger) LogRequest(subdomain string, request *http.Request, r
 		return err
 	}
 
-	connection.logs.PushFront(map[string][]byte{
-		"request":  requestBytes,
-		"response": responseBytes,
+	connection.logs.PushFront(map[string]string{
+		"request":  string(requestBytes),
+		"response": string(responseBytes),
 	})
 
 	return nil
