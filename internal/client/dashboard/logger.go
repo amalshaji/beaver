@@ -19,8 +19,9 @@ type ConnectionLogger struct {
 }
 
 type requestLogs struct {
-	logs *list.List
-	lock sync.Mutex
+	logs     *list.List
+	latestId int
+	lock     sync.Mutex
 }
 
 func NewConnectionLogger() *ConnectionLogger {
@@ -71,7 +72,9 @@ func (c *ConnectionLogger) LogRequest(subdomain string, request *http.Request, r
 		return err
 	}
 
-	connection.logs.PushFront(map[string]string{
+	connection.latestId += 1
+	connection.logs.PushFront(map[string]any{
+		"id":       connection.latestId,
 		"request":  string(requestBytes),
 		"response": string(responseBytes),
 	})
