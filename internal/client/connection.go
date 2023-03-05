@@ -16,16 +16,15 @@ import (
 	"github.com/amalshaji/beaver/internal/utils"
 )
 
-// Keep a map of connections(subdomains) for logging
-var activeTunnelConnections = make(map[string]struct{})
-
-func registerNewConnection(subdomain string) {
-	activeTunnelConnections[subdomain] = struct{}{}
+func (c *Connection) registerNewConnection(subdomain string) {
+	err := c.pool.client.connectionLogger.AddConnection(subdomain)
+	if err != nil {
+		log.Println(err.Error())
+	}
 }
 
-func isNewConnection(subdomain string) bool {
-	_, ok := activeTunnelConnections[subdomain]
-	return !ok
+func (c *Connection) isNewConnection(subdomain string) bool {
+	return c.pool.client.connectionLogger.IsNewConnection(subdomain)
 }
 
 // Status of a Connection
@@ -56,10 +55,6 @@ func NewConnection(pool *Pool) *Connection {
 
 // Connect to the IsolatorServer using a HTTP websocket
 func (connection *Connection) Connect(ctx context.Context) (err error) {
-	if connection.IsInitialConnection() {
-		log.Printf("Creating tunnel connection for :%d\n", connection.pool.client.Config.port)
-	}
-
 	var res *http.Response
 	// Create a new TCP(/TLS) connection ( no use of net.http )
 	connection.ws, res, err = connection.pool.client.dialer.DialContext(
@@ -107,7 +102,7 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 		httpPort = ":" + httpPort
 	}
 
-	if isNewConnection(connection.pool.client.Config.subdomain) {
+	if connection.isNewConnection(connection.pool.client.Config.subdomain) {
 		log.Println(
 			color.Green(
 				fmt.Sprintf("Tunnel connected %s://%s.%s%s -> http://localhost:%d",
@@ -120,7 +115,7 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 		)
 
 		// register the new connection
-		registerNewConnection(connection.pool.client.Config.subdomain)
+		connection.registerNewConnection(connection.pool.client.Config.subdomain)
 	}
 
 	// Send the greeting message with proxy id and wanted pool size.
@@ -200,6 +195,15 @@ func (connection *Connection) serve(ctx context.Context) {
 				break
 			}
 			continue
+		}
+
+		err = connection.pool.client.connectionLogger.LogRequest(
+			connection.pool.client.Config.subdomain,
+			req,
+			resp,
+		)
+		if err != nil {
+			fmt.Println(err)
 		}
 
 		var urlPath string = req.URL.Path

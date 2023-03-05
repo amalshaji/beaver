@@ -58,7 +58,12 @@ func (config *Config) setDefaults() {
 }
 
 // LoadConfiguration loads configuration from a YAML file
-func LoadConfiguration(configFile string, subdomain string, port int, showWsReadErrors bool) (Config, error) {
+func LoadConfiguration(
+	configFile string,
+	subdomain string,
+	port int,
+	showWsReadErrors bool,
+) (Config, error) {
 	var config Config
 
 	bytes, err := os.ReadFile(configFile)
