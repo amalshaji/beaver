@@ -40,10 +40,10 @@ func TestCreateSuperUser(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, superUser.IsSuperUser)
 
-	// Creating superuser with duplicate email should throw error
+	// Creating multiple superusers should fail
 	_, err = user.CreateSuperUser(ctx, "test@beaver.com", "password")
 	assert.Error(t, err)
-	assert.Equal(t, err, ErrDuplicateAdminUser)
+	assert.Equal(t, err, ErrMultipleSuperuserError)
 }
 
 func TestAdminSuperUser(t *testing.T) {

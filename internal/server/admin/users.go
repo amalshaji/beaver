@@ -15,6 +15,7 @@ var ErrInvalidUserSession = errors.New("invalid user session")
 var ErrWrongEmailOrPassword = errors.New("wrong email or password")
 var ErrDuplicateAdminUser = errors.New("admin user with the same email exists")
 var ErrDuplicateTunnelUser = errors.New("tunnel user with the same email exists")
+var ErrMultipleSuperuserError = errors.New("you cannot create more than one superuser")
 
 type User struct {
 	Store *badgerhold.Store
@@ -71,7 +72,21 @@ func (u *User) CreateAdminUser(ctx context.Context, email, password string) (*Ad
 	return u.CreateUser(ctx, email, password, false)
 }
 
+func (u *User) CanCreateSuperUser(ctx context.Context) error {
+	count, err := u.Store.Count(&AdminUser{}, badgerhold.Where("IsSuperUser").Eq(true))
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return nil
+	}
+	return ErrMultipleSuperuserError
+}
+
 func (u *User) CreateSuperUser(ctx context.Context, email, password string) (*AdminUser, error) {
+	if err := u.CanCreateSuperUser(ctx); err != nil {
+		return nil, err
+	}
 	return u.CreateUser(ctx, email, password, true)
 }
 
