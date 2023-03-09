@@ -1,7 +1,5 @@
 # Beaver
 
-
-
 <p align="center">
     <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/amalshaji/beaver/unit-tests.yml">
     <img alt="GitHub" src="https://img.shields.io/github/license/amalshaji/beaver">
@@ -13,7 +11,7 @@
 </p>
 
 > **Warning**
-> This project is in a very early stage, If you find any bugs, please raise an issue.
+> ⚠️⚠️ This project is in a very early stage, the APIs might break during the alpha stage. Please use with caution ⚠️⚠️
 
 ## Client
 
