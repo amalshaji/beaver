@@ -78,9 +78,9 @@ func status(c echo.Context) error {
 
 var ErrAuthRequired = errors.New("authentication required")
 
-type LoginPayload struct {
-	Email    string `jspn:"email"`
-	Password string `jspn:"password"`
+type AuthPayload struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func authRequired(c echo.Context) error {
@@ -113,6 +113,7 @@ func setupApiRoutes(e *echo.Echo) {
 	g := e.Group("/api/v1")
 
 	g.POST("/login", loginApi)
+	g.POST("/signup", superUserSignupApi)
 	g.POST("/logout", logoutApi, authRequiredMiddleware)
 	g.GET("/stats", serverStats, authRequiredMiddleware)
 	g.GET("/tunnel-users", getTunnelUsers, authRequiredMiddleware)
@@ -120,8 +121,25 @@ func setupApiRoutes(e *echo.Echo) {
 	g.PUT("/tunnel-users", rotateTunnelUserSecretKey, authRequiredMiddleware)
 }
 
+func superUserSignupApi(c echo.Context) error {
+	var p AuthPayload
+
+	if err := c.Bind(&p); err != nil {
+		return utils.HttpBadRequest(c, "invalid payload")
+	}
+
+	app := c.Get("app").(*app.App)
+
+	_, err := app.User.CreateSuperUser(c.Request().Context(), p.Email, p.Password)
+	if err != nil {
+		return utils.HttpBadRequest(c, err.Error())
+	}
+
+	return c.JSON(200, map[string]string{"message": "ok"})
+}
+
 func loginApi(c echo.Context) error {
-	var p LoginPayload
+	var p AuthPayload
 
 	if err := c.Bind(&p); err != nil {
 		return utils.HttpBadRequest(c, "invalid payload")
@@ -144,9 +162,7 @@ func loginApi(c echo.Context) error {
 
 	c.SetCookie(cookie)
 
-	c.JSON(200, map[string]string{"message": "ok"})
-
-	return nil
+	return c.JSON(200, map[string]string{"message": "ok"})
 }
 
 func logoutApi(c echo.Context) error {
@@ -188,8 +204,7 @@ func serverStats(c echo.Context) error {
 
 	result["active_connections"] = len(app.Server.Pools)
 
-	c.JSON(200, result)
-	return nil
+	return c.JSON(200, result)
 }
 
 type createTunnelUserPayload struct {
@@ -253,6 +268,34 @@ func GetAdminHandler(app *app.App) *echo.Echo {
 		}
 	}
 
+	// Handle redirections between login and createsuperuser pages
+	adminRouter.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			var err error
+
+			if c.Path() == "/" || c.Path() == "/createsuperuser" {
+				err = app.User.CanCreateSuperUser(c.Request().Context())
+			}
+
+			if c.Path() == "/" {
+				if err == nil {
+					return c.Redirect(307, "/createsuperuser")
+				} else {
+					return next(c)
+				}
+			}
+
+			if c.Path() == "/createsuperuser" {
+				if err != nil {
+					return c.Redirect(307, "/")
+				} else {
+					return next(c)
+				}
+			}
+			return next(c)
+		}
+	})
+
 	// Redirect non-subdomain pages based on valid session token
 	adminRouter.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -273,6 +316,7 @@ func GetAdminHandler(app *app.App) *echo.Echo {
 	if debug := os.Getenv("DEBUG"); debug == "True" {
 		adminRouter.File("/", "./internal/server/templates/index.html")
 		adminRouter.File("/dashboard", "./internal/server/templates/index.html")
+		adminRouter.File("/createsuperuser", "./internal/server/templates/index.html")
 	} else {
 		fsysAssets, err := fs.Sub(web.DistAssets, "dist")
 		if err != nil {
@@ -283,6 +327,9 @@ func GetAdminHandler(app *app.App) *echo.Echo {
 			return c.Blob(http.StatusOK, "text/html", web.DistIndex)
 		})
 		adminRouter.GET("/dashboard", func(c echo.Context) error {
+			return c.Blob(http.StatusOK, "text/html", web.DistIndex)
+		})
+		adminRouter.GET("/createsuperuser", func(c echo.Context) error {
 			return c.Blob(http.StatusOK, "text/html", web.DistIndex)
 		})
 		adminRouter.GET("/assets/*", echo.WrapHandler(AssetsHandler))
