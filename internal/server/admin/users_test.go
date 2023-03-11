@@ -27,9 +27,9 @@ var db = newTestStore()
 
 func TestCreateSuperUser(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
+		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
+		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
+		db.Unscoped().Where("1 = 1").Delete(&Session{})
 	}()
 
 	var err error
@@ -50,9 +50,9 @@ func TestCreateSuperUser(t *testing.T) {
 
 func TestAdminSuperUser(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
+		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
+		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
+		db.Unscoped().Where("1 = 1").Delete(&Session{})
 	}()
 	var err error
 
@@ -77,9 +77,9 @@ func TestAdminSuperUser(t *testing.T) {
 
 func TestLoginAdminUser(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
+		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
+		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
+		db.Unscoped().Where("1 = 1").Delete(&Session{})
 	}()
 
 	ctx := context.Background()
@@ -105,9 +105,9 @@ func TestLoginAdminUser(t *testing.T) {
 
 func TestValidateSession(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
+		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
+		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
+		db.Unscoped().Where("1 = 1").Delete(&Session{})
 	}()
 
 	ctx := context.Background()
@@ -129,9 +129,9 @@ func TestValidateSession(t *testing.T) {
 
 func TestLogoutAdminUser(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
+		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
+		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
+		db.Unscoped().Where("1 = 1").Delete(&Session{})
 	}()
 
 	ctx := context.Background()
@@ -160,9 +160,9 @@ func TestLogoutAdminUser(t *testing.T) {
 
 func TestCreateTunnelUser(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
+		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
+		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
+		db.Unscoped().Where("1 = 1").Delete(&Session{})
 	}()
 
 	ctx := context.Background()
@@ -176,9 +176,9 @@ func TestCreateTunnelUser(t *testing.T) {
 
 func TestGetTunnelUserBySecretKey(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
+		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
+		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
+		db.Unscoped().Where("1 = 1").Delete(&Session{})
 	}()
 
 	ctx := context.Background()
@@ -193,9 +193,9 @@ func TestGetTunnelUserBySecretKey(t *testing.T) {
 
 func TestRotateTunnelUserSecretKey(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
+		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
+		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
+		db.Unscoped().Where("1 = 1").Delete(&Session{})
 	}()
 
 	ctx := context.Background()
@@ -217,9 +217,9 @@ func TestRotateTunnelUserSecretKey(t *testing.T) {
 
 func TestListTunnelUsers(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
-		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
+		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
+		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
+		db.Unscoped().Where("1 = 1").Delete(&Session{})
 	}()
 
 	ctx := context.Background()
