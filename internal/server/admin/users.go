@@ -29,7 +29,8 @@ func (u *UserService) findUserByEmail(ctx context.Context, email string) (*Admin
 	email = utils.SanitizeString(email)
 
 	var user AdminUser
-	result := u.DB.Model(&AdminUser{Email: email}).First(&user)
+	result := u.DB.Where(&AdminUser{Email: email}).First(&user)
+
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrAdminUserNotFound
@@ -122,15 +123,14 @@ func (u *UserService) Login(ctx context.Context, email, password string) (string
 }
 
 func (u *UserService) Logout(ctx context.Context, sessionToken string) error {
-	var err error
+	result := u.DB.Where(&Session{Token: sessionToken}).Delete(&Session{})
 
-	if _, err = u.ValidateSession(ctx, sessionToken); err != nil {
-		return err
+	if result.Error != nil {
+		return result.Error
 	}
 
-	err = u.DB.Model(&AdminUser{}).Association("Session").Delete(Session{Token: sessionToken})
-	if err != nil {
-		return err
+	if result.RowsAffected == 0 {
+		return ErrInvalidUserSession
 	}
 
 	return nil
