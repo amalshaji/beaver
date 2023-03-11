@@ -6,26 +6,22 @@ import (
 
 	"github.com/amalshaji/beaver/internal/utils"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
-var ErrWrongPassword = errors.New("wrong password")
-
-type BaseModel struct {
-	ID        uint64    `badgerhold:"key" json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-func (b *BaseModel) MarkAsNew() {
-	b.CreatedAt = time.Now()
-}
+var (
+	ErrWrongPassword  = errors.New("wrong password")
+	ErrWrongSecretKey = errors.New("wrong secret key")
+)
 
 type AdminUser struct {
-	BaseModel
+	gorm.Model
 
-	Email        string `badgerhold:"unique" json:"email"`
-	PasswordHash string `json:"-"`
-	SessionToken string `json:"-"`
-	IsSuperUser  bool   `json:"is_super_user"`
+	Email        string `gorm:"index,unique"`
+	PasswordHash string `gorm:"unique" json:"-"`
+	SuperUser    bool
+
+	Session Session
 }
 
 func (a *AdminUser) SetPassword(rawPassword string) error {
@@ -47,24 +43,39 @@ func (a *AdminUser) CheckPassword(rawPassword string) error {
 	return nil
 }
 
-func (a *AdminUser) GenerateSessionToken() error {
-	a.SessionToken = utils.GenerateUUIDV4().String()
-	return nil
+type Session struct {
+	gorm.Model
+
+	Token       string `gorm:"index, unique"`
+	AdminUserId uint
 }
 
-func (a *AdminUser) ResetSessionToken() error {
-	a.SessionToken = ""
+func (s *Session) GenerateSessionToken() error {
+	s.Token = utils.GenerateSessionToken()
 	return nil
 }
 
 type TunnelUser struct {
-	BaseModel
+	gorm.Model
 
-	Email     string `badgerhold:"unique" json:"email"`
-	SecretKey string `json:"secret_key"`
+	Email        string  `gorm:"index,unique"`
+	SecretKey    *string `gorm:"index,unique" json:"-"`
+	LastActiveAt *time.Time
 }
 
-func (t *TunnelUser) RotateSecretKey() error {
-	t.SecretKey = utils.GenerateUUIDV4().String()
+func (t *TunnelUser) RotateSecretKey() string {
+	newSecretKey := utils.GenerateSecretKey()
+	newSecretKeyHashedBytes, _ := bcrypt.GenerateFromPassword([]byte(newSecretKey), 13)
+	newSecretKeyHashed := string(newSecretKeyHashedBytes)
+	t.SecretKey = &newSecretKeyHashed
+	return newSecretKey
+}
+
+func (t *TunnelUser) ValidateSecretKey(secretKey string) error {
+	secretKey = utils.SanitizeString(secretKey)
+	err := bcrypt.CompareHashAndPassword([]byte(*t.SecretKey), []byte(secretKey))
+	if err != nil {
+		return ErrWrongPassword
+	}
 	return nil
 }

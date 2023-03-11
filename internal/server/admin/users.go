@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/amalshaji/beaver/internal/utils"
-	"github.com/timshannon/badgerhold/v4"
+	"gorm.io/gorm"
 )
 
 var ErrAdminUserNotFound = errors.New("admin user does not exist")
@@ -17,28 +17,30 @@ var ErrDuplicateAdminUser = errors.New("admin user with the same email exists")
 var ErrDuplicateTunnelUser = errors.New("tunnel user with the same email exists")
 var ErrMultipleSuperuserError = errors.New("you cannot create more than one superuser")
 
-type User struct {
-	Store *badgerhold.Store
+type UserService struct {
+	DB *gorm.DB
 }
 
-func NewUserService(store *badgerhold.Store) *User {
-	return &User{Store: store}
+func NewUserService(store *gorm.DB) *UserService {
+	return &UserService{DB: store}
 }
 
-func (u *User) findUserByEmail(ctx context.Context, email string) (*AdminUser, error) {
+func (u *UserService) findUserByEmail(ctx context.Context, email string) (*AdminUser, error) {
 	email = utils.SanitizeString(email)
 
-	var superUser AdminUser
-	if err := u.Store.FindOne(&superUser, badgerhold.Where("Email").Eq(email)); err != nil {
-		if errors.Is(err, badgerhold.ErrNotFound) {
+	var user AdminUser
+	result := u.DB.Model(&AdminUser{Email: email}).First(&user)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrAdminUserNotFound
 		}
-		return nil, err
+		return nil, result.Error
 	}
-	return &superUser, nil
+
+	return &user, nil
 }
 
-func (u *User) CreateUser(ctx context.Context, email, password string, isSuperUser bool) (*AdminUser, error) {
+func (u *UserService) CreateUser(ctx context.Context, email, password string, superUser bool) (*AdminUser, error) {
 	email = utils.SanitizeString(email)
 	password = utils.SanitizeString(password)
 
@@ -51,46 +53,47 @@ func (u *User) CreateUser(ctx context.Context, email, password string, isSuperUs
 		return nil, ErrDuplicateAdminUser
 	}
 
-	var adminUser AdminUser
-
-	adminUser.Email = email
+	adminUser := AdminUser{
+		Email:     email,
+		SuperUser: superUser,
+	}
 	adminUser.SetPassword(password)
-	adminUser.IsSuperUser = isSuperUser
-	adminUser.MarkAsNew()
 
-	if err := u.Store.Insert(badgerhold.NextSequence(), &adminUser); err != nil {
-		if errors.Is(err, badgerhold.ErrUniqueExists) {
-			return nil, ErrDuplicateAdminUser
-		}
-		return nil, err
+	result := u.DB.Create(&adminUser)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
 	return &adminUser, nil
 }
 
-func (u *User) CreateAdminUser(ctx context.Context, email, password string) (*AdminUser, error) {
+func (u *UserService) CreateAdminUser(ctx context.Context, email, password string) (*AdminUser, error) {
 	return u.CreateUser(ctx, email, password, false)
 }
 
-func (u *User) CanCreateSuperUser(ctx context.Context) error {
-	count, err := u.Store.Count(&AdminUser{}, badgerhold.Where("IsSuperUser").Eq(true))
-	if err != nil {
-		return err
+func (u *UserService) CanCreateSuperUser(ctx context.Context) error {
+	var count int64
+
+	result := u.DB.Model(&AdminUser{}).Where("super_user = ?", true).Count(&count)
+	if result.Error != nil {
+		return result.Error
 	}
+
 	if count == 0 {
 		return nil
 	}
+
 	return ErrMultipleSuperuserError
 }
 
-func (u *User) CreateSuperUser(ctx context.Context, email, password string) (*AdminUser, error) {
+func (u *UserService) CreateSuperUser(ctx context.Context, email, password string) (*AdminUser, error) {
 	if err := u.CanCreateSuperUser(ctx); err != nil {
 		return nil, err
 	}
 	return u.CreateUser(ctx, email, password, true)
 }
 
-func (u *User) Login(ctx context.Context, email, password string) (string, error) {
+func (u *UserService) Login(ctx context.Context, email, password string) (string, error) {
 	email = utils.SanitizeString(email)
 	password = utils.SanitizeString(password)
 
@@ -105,67 +108,67 @@ func (u *User) Login(ctx context.Context, email, password string) (string, error
 		return "", ErrWrongEmailOrPassword
 	}
 
-	adminUser.GenerateSessionToken()
+	session := Session{
+		Token: utils.GenerateSessionToken(),
+	}
+	adminUser.Session = session
 
-	u.Store.UpdateMatching(&AdminUser{}, badgerhold.Where("Email").Eq(email), func(record interface{}) error {
-		update, ok := record.(*AdminUser)
-		if !ok {
-			return fmt.Errorf("error while updating superuser")
-		}
-		update.SessionToken = adminUser.SessionToken
-		return nil
-	})
+	result := u.DB.Save(&adminUser)
+	if result.Error != nil {
+		return "", result.Error
+	}
 
-	return adminUser.SessionToken, nil
+	return adminUser.Session.Token, nil
 }
 
-func (u *User) Logout(ctx context.Context, sessionToken string) error {
+func (u *UserService) Logout(ctx context.Context, sessionToken string) error {
 	var err error
 
 	if _, err = u.ValidateSession(ctx, sessionToken); err != nil {
 		return err
 	}
 
-	u.Store.UpdateMatching(&AdminUser{}, badgerhold.Where("SessionToken").Eq(sessionToken), func(record interface{}) error {
-		update, ok := record.(*AdminUser)
-		if !ok {
-			return fmt.Errorf("error while updating superuser")
-		}
-
-		update.SessionToken = ""
-		return nil
-	})
+	err = u.DB.Model(&AdminUser{}).Association("Session").Delete(Session{Token: sessionToken})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (u *User) ValidateSession(ctx context.Context, sessionToken string) (*AdminUser, error) {
+func (u *UserService) ValidateSession(ctx context.Context, sessionToken string) (*AdminUser, error) {
 	var adminUser AdminUser
 
-	if err := u.Store.FindOne(&adminUser, badgerhold.Where("SessionToken").Eq(sessionToken)); err != nil {
-		if errors.Is(err, badgerhold.ErrNotFound) {
+	result := u.DB.
+		Joins("JOIN sessions on sessions.admin_user_id = admin_users.id").
+		Where("sessions.token = ?", sessionToken).First(&adminUser)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrInvalidUserSession
 		}
-		return nil, err
+		return nil, result.Error
 	}
+
 	return &adminUser, nil
 }
 
-func (u *User) findTunnelUserByEmail(ctx context.Context, email string) (*TunnelUser, error) {
+func (u *UserService) findTunnelUserByEmail(ctx context.Context, email string) (*TunnelUser, error) {
 	email = utils.SanitizeString(email)
 
 	var tunnelUser TunnelUser
 
-	if err := u.Store.FindOne(&tunnelUser, badgerhold.Where("Email").Eq(email)); err != nil {
-		if errors.Is(err, badgerhold.ErrNotFound) {
+	result := u.DB.Where(&TunnelUser{Email: email}).First(&tunnelUser)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrTunnelUserNotFound
 		}
-		return nil, err
+		return nil, result.Error
 	}
+
 	return &tunnelUser, nil
 }
 
-func (u *User) CreateTunnelUser(ctx context.Context, email string) (*TunnelUser, error) {
+func (u *UserService) CreateTunnelUser(ctx context.Context, email string) (*TunnelUser, error) {
 	email = utils.SanitizeString(email)
 
 	existingTunnelUser, err := u.findTunnelUserByEmail(ctx, email)
@@ -181,65 +184,62 @@ func (u *User) CreateTunnelUser(ctx context.Context, email string) (*TunnelUser,
 		return nil, fmt.Errorf("enter a valid email address")
 	}
 
-	var tunnelUser TunnelUser
-
-	tunnelUser.Email = email
+	tunnelUser := TunnelUser{
+		Email: email,
+	}
 	tunnelUser.RotateSecretKey()
-	tunnelUser.MarkAsNew()
 
-	if err := u.Store.Insert(badgerhold.NextSequence(), &tunnelUser); err != nil {
-		if errors.Is(err, badgerhold.ErrUniqueExists) {
-			return nil, ErrDuplicateTunnelUser
-		}
-		return nil, err
+	result := u.DB.Save(&tunnelUser)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
 	return &tunnelUser, nil
 }
 
-func (u *User) GetTunnelUserBySecret(ctx context.Context, secretKey string) (*TunnelUser, error) {
+func (u *UserService) GetTunnelUserBySecret(ctx context.Context, secretKey string) (*TunnelUser, error) {
 	secretKey = utils.SanitizeString(secretKey)
 
 	var tunnelUser TunnelUser
 
-	if err := u.Store.FindOne(&tunnelUser, badgerhold.Where("SecretKey").Eq(secretKey)); err != nil {
-		if errors.Is(err, badgerhold.ErrNotFound) {
+	result := u.DB.Where(&TunnelUser{SecretKey: &secretKey}).First(&tunnelUser)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrTunnelUserNotFound
 		}
-		return nil, err
+		return nil, result.Error
 	}
+
 	return &tunnelUser, nil
 }
 
-func (u *User) ListTunnelUsers(ctx context.Context) ([]TunnelUser, error) {
+func (u *UserService) ListTunnelUsers(ctx context.Context) ([]TunnelUser, error) {
 	var tunnelUsers []TunnelUser
 
-	if err := u.Store.Find(&tunnelUsers, nil); err != nil {
-		return nil, err
+	result := u.DB.Find(&tunnelUsers)
+	if result.Error != nil {
+		return nil, result.Error
 	}
-	if tunnelUsers == nil {
+
+	if len(tunnelUsers) == 0 {
 		return []TunnelUser{}, nil
 	}
+
 	return tunnelUsers, nil
 }
 
-func (u *User) RotateTunnelUserSecretKey(ctx context.Context, email string) (*TunnelUser, error) {
+func (u *UserService) RotateTunnelUserSecretKey(ctx context.Context, email string) (*TunnelUser, error) {
 	tunnelUser, err := u.findTunnelUserByEmail(ctx, email)
-
 	if err != nil {
 		return nil, err
 	}
 
 	tunnelUser.RotateSecretKey()
 
-	u.Store.UpdateMatching(&TunnelUser{}, badgerhold.Where("Email").Eq(email), func(record interface{}) error {
-		update, ok := record.(*TunnelUser)
-		if !ok {
-			return fmt.Errorf("error while updating superuser")
-		}
-		update.SecretKey = tunnelUser.SecretKey
-		return nil
-	})
+	result := u.DB.Save(&tunnelUser)
+	if result.Error != nil {
+		return nil, result.Error
+	}
 
 	return tunnelUser, nil
 }
