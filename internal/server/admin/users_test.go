@@ -6,39 +6,41 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/timshannon/badgerhold/v4"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-func newTestStore() *badgerhold.Store {
-	options := badgerhold.DefaultOptions
-	options.Dir = "./testdata"
-	options.ValueDir = "./testdata"
-	options.Logger = nil
-
-	store, err := badgerhold.Open(options)
+func newTestStore() *gorm.DB {
+	// create database directory if not exists
+	db, err := gorm.Open(sqlite.Open("./test_beaver.db"), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return store
+	// should automigrate here?
+	db.AutoMigrate(AdminUser{}, TunnelUser{}, Session{})
+
+	return db
 }
 
-var store = newTestStore()
+var db = newTestStore()
 
 func TestCreateSuperUser(t *testing.T) {
 	defer func() {
-		store.Badger().DropAll()
+		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
 	}()
 
 	var err error
 
 	ctx := context.Background()
-	user := NewUserService(store)
+	user := NewUserService(db)
 
 	// No error while creating superuser
 	superUser, err := user.CreateSuperUser(ctx, "test@beaver.com", "password")
 	assert.NoError(t, err)
-	assert.True(t, superUser.IsSuperUser)
+	assert.True(t, superUser.SuperUser)
 
 	// Creating multiple superusers should fail
 	_, err = user.CreateSuperUser(ctx, "test@beaver.com", "password")
@@ -48,18 +50,19 @@ func TestCreateSuperUser(t *testing.T) {
 
 func TestAdminSuperUser(t *testing.T) {
 	defer func() {
-		store.Badger().DropAll()
+		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
 	}()
-
 	var err error
 
 	ctx := context.Background()
-	user := NewUserService(store)
+	user := NewUserService(db)
 
 	// No error while creating adminuser
 	adminUser, err := user.CreateAdminUser(ctx, "test@beaver.com", "password")
 	assert.NoError(t, err)
-	assert.False(t, adminUser.IsSuperUser)
+	assert.False(t, adminUser.SuperUser)
 
 	// Creating adminuser with duplicate email should throw error
 	_, err = user.CreateAdminUser(ctx, "test@beaver.com", "password")
@@ -74,33 +77,41 @@ func TestAdminSuperUser(t *testing.T) {
 
 func TestLoginAdminUser(t *testing.T) {
 	defer func() {
-		store.Badger().DropAll()
+		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
 	}()
 
 	ctx := context.Background()
-	user := NewUserService(store)
+	user := NewUserService(db)
 
 	_, _ = user.CreateAdminUser(ctx, "test@beaver.com", "password")
 
 	token, _ := user.Login(ctx, "test@beaver.com", "password")
 
 	superUser, _ := user.findUserByEmail(ctx, "test@beaver.com")
-	assert.NotEqual(t, superUser.SessionToken, "")
-	assert.Equal(t, superUser.SessionToken, token)
+
+	var session Session
+	_ = db.Where(&Session{AdminUserId: superUser.ID}).First(&session)
+
+	assert.NotNil(t, session.Token)
+	assert.Equal(t, session.Token, token)
 
 	token, err := user.Login(ctx, "test2@beaver.com", "password")
 	assert.Error(t, err)
 	assert.Equal(t, ErrWrongEmailOrPassword, err)
-	assert.Equal(t, token, "")
+	assert.Equal(t, "", token)
 }
 
 func TestValidateSession(t *testing.T) {
 	defer func() {
-		store.Badger().DropAll()
+		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
 	}()
 
 	ctx := context.Background()
-	user := NewUserService(store)
+	user := NewUserService(db)
 
 	superUser, _ := user.CreateAdminUser(ctx, "test@beaver.com", "password")
 
@@ -118,11 +129,13 @@ func TestValidateSession(t *testing.T) {
 
 func TestLogoutAdminUser(t *testing.T) {
 	defer func() {
-		store.Badger().DropAll()
+		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
 	}()
 
 	ctx := context.Background()
-	user := NewUserService(store)
+	user := NewUserService(db)
 
 	_, _ = user.CreateAdminUser(ctx, "test@beaver.com", "password")
 
@@ -132,8 +145,13 @@ func TestLogoutAdminUser(t *testing.T) {
 	assert.NoError(t, err)
 
 	superUser, err := user.findUserByEmail(ctx, "test@beaver.com")
-	assert.Equal(t, superUser.SessionToken, "")
 	assert.NoError(t, err)
+
+	var session Session
+	result := db.Where(&Session{AdminUserId: superUser.ID}).First(&session)
+
+	assert.Error(t, result.Error)
+	assert.ErrorIs(t, result.Error, gorm.ErrRecordNotFound)
 
 	err = user.Logout(ctx, "test2@beaver.com")
 	assert.Error(t, err)
@@ -142,11 +160,13 @@ func TestLogoutAdminUser(t *testing.T) {
 
 func TestCreateTunnelUser(t *testing.T) {
 	defer func() {
-		store.Badger().DropAll()
+		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
 	}()
 
 	ctx := context.Background()
-	user := NewUserService(store)
+	user := NewUserService(db)
 
 	tu, err := user.CreateTunnelUser(ctx, "test@beaver.com")
 	assert.NoError(t, err)
@@ -156,26 +176,30 @@ func TestCreateTunnelUser(t *testing.T) {
 
 func TestGetTunnelUserBySecretKey(t *testing.T) {
 	defer func() {
-		store.Badger().DropAll()
+		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
 	}()
 
 	ctx := context.Background()
-	user := NewUserService(store)
+	user := NewUserService(db)
 
 	tu, _ := user.CreateTunnelUser(ctx, "test@beaver.com")
 
-	ntu, err := user.GetTunnelUserBySecret(ctx, tu.SecretKey)
+	ntu, err := user.GetTunnelUserBySecret(ctx, *tu.SecretKey)
 	assert.NoError(t, err)
 	assert.Equal(t, tu.Email, ntu.Email)
 }
 
 func TestRotateTunnelUserSecretKey(t *testing.T) {
 	defer func() {
-		store.Badger().DropAll()
+		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
 	}()
 
 	ctx := context.Background()
-	user := NewUserService(store)
+	user := NewUserService(db)
 
 	tu, _ := user.CreateTunnelUser(ctx, "test@beaver.com")
 
@@ -193,11 +217,13 @@ func TestRotateTunnelUserSecretKey(t *testing.T) {
 
 func TestListTunnelUsers(t *testing.T) {
 	defer func() {
-		store.Badger().DropAll()
+		db.Unscoped().Where("id >= ?", 0).Delete(&AdminUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&TunnelUser{})
+		db.Unscoped().Where("id >= ?", 0).Delete(&Session{})
 	}()
 
 	ctx := context.Background()
-	user := NewUserService(store)
+	user := NewUserService(db)
 
 	tunnelUsers, err := user.ListTunnelUsers(ctx)
 	assert.NoError(t, err)
