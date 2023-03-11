@@ -5,8 +5,8 @@ import gonanoid "github.com/matoous/go-nanoid/v2"
 const (
 	RANDOM_SUBDOMAIN_LENGTH = 6
 	CONNECTION_ID_LENGTH    = 10
-	SECRET_KEY_LENGTH       = 16
-	SESSION_ID_LENGTH       = 8
+	SECRET_KEY_LENGTH       = 32
+	SESSION_ID_LENGTH       = 16
 
 	NANOID_ALPHABETS = "abcdefghijklmnopqrstuvwxyz0123456789"
 )
