@@ -65,9 +65,7 @@ type TunnelUser struct {
 
 func (t *TunnelUser) RotateSecretKey() string {
 	newSecretKey := utils.GenerateSecretKey()
-	newSecretKeyHashedBytes, _ := bcrypt.GenerateFromPassword([]byte(newSecretKey), 13)
-	newSecretKeyHashed := string(newSecretKeyHashedBytes)
-	t.SecretKey = &newSecretKeyHashed
+	t.SecretKey = &newSecretKey
 	return newSecretKey
 }
 
