@@ -1,11 +1,13 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@rgossiaux/svelte-headlessui': ^1.0.2
   '@svelte-plugins/tooltips': ^0.1.6
   '@sveltejs/vite-plugin-svelte': ^2.0.2
   '@tailwindcss/forms': ^0.5.3
   '@tsconfig/svelte': ^3.0.0
   autoprefixer: ^10.4.7
+  moment: ^2.29.4
   postcss: ^8.4.14
   postcss-load-config: ^4.0.1
   svelte: ^3.55.1
@@ -18,7 +20,11 @@ specifiers:
   typescript: ^4.9.3
   vite: ^4.1.0
 
+dependencies:
+  moment: 2.29.4
+
 devDependencies:
+  '@rgossiaux/svelte-headlessui': 1.0.2_svelte@3.55.1
   '@svelte-plugins/tooltips': 0.1.6
   '@sveltejs/vite-plugin-svelte': 2.0.2_svelte@3.55.1+vite@4.1.1
   '@tailwindcss/forms': 0.5.3_tailwindcss@3.2.6
@@ -271,6 +277,14 @@ packages:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.15.0
+    dev: true
+
+  /@rgossiaux/svelte-headlessui/1.0.2_svelte@3.55.1:
+    resolution: {integrity: sha512-sauopYTSivhzXe1kAvgawkhyYJcQlK8Li3p0d2OtcCIVprOzdbard5lbqWB4xHDv83zAobt2mR08oizO2poHLQ==}
+    peerDependencies:
+      svelte: ^3.44.0
+    dependencies:
+      svelte: 3.55.1
     dev: true
 
   /@svelte-plugins/tooltips/0.1.6:
@@ -739,6 +753,10 @@ packages:
     dependencies:
       minimist: 1.2.8
     dev: true
+
+  /moment/2.29.4:
+    resolution: {integrity: sha512-5LC9SOxjSc2HF6vO2CyuTDNivEdoz2IvyJJGj6X8DJ0eFyfszE0QiEd+iXmBvUP3WHxSjFH/vIsA0EN00cgr8w==}
+    dev: false
 
   /mri/1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}

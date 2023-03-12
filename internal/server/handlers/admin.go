@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -69,6 +70,12 @@ func register(c echo.Context) error {
 	// Add the WebSocket connection to the pool
 	pool.Register(ws)
 
+	// Set tunnelUser as active
+	err = app.User.SetActiveConnection(c.Request().Context(), tunnelUser)
+	if err != nil {
+		log.Printf("Unable to set connection as active for tunnelUser %s: %v", tunnelUser.Email, err.Error())
+	}
+
 	return nil
 }
 
@@ -119,6 +126,7 @@ func setupApiRoutes(e *echo.Echo) {
 	g.GET("/tunnel-users", getTunnelUsers, authRequiredMiddleware)
 	g.POST("/tunnel-users", createTunnelUser, authRequiredMiddleware)
 	g.PUT("/tunnel-users", rotateTunnelUserSecretKey, authRequiredMiddleware)
+	g.DELETE("/tunnel-users/:id", deleteTunnelUser, authRequiredMiddleware)
 }
 
 func superUserSignupApi(c echo.Context) error {
@@ -204,6 +212,10 @@ func serverStats(c echo.Context) error {
 
 	result["active_connections"] = len(app.Server.Pools)
 
+	connectionStatus, _ := app.User.GetUserConnectionStatus(c.Request().Context())
+
+	result["connection_status"] = connectionStatus
+
 	return c.JSON(200, result)
 }
 
@@ -224,7 +236,7 @@ func createTunnelUser(c echo.Context) error {
 		return utils.HttpBadRequest(c, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, tunnelUser)
+	return c.JSON(http.StatusOK, map[string]string{"SecretKey": *tunnelUser.SecretKey})
 }
 
 func getTunnelUsers(c echo.Context) error {
@@ -243,11 +255,27 @@ func rotateTunnelUserSecretKey(c echo.Context) error {
 	}
 
 	app := c.Get("app").(*app.App)
-	tunnelUsers, err := app.User.RotateTunnelUserSecretKey(c.Request().Context(), payload.Email)
+	tunnelUser, err := app.User.RotateTunnelUserSecretKey(c.Request().Context(), payload.Email)
 	if err != nil {
 		return utils.HttpBadRequest(c, err.Error())
 	}
-	return c.JSON(http.StatusOK, tunnelUsers)
+	return c.JSON(http.StatusOK, map[string]string{"SecretKey": *tunnelUser.SecretKey})
+}
+
+func deleteTunnelUser(c echo.Context) error {
+	userIdStr := c.Param("id")
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		return utils.HttpBadRequest(c, "id must be a positive number")
+
+	}
+
+	app := c.Get("app").(*app.App)
+	err = app.User.DeleteTunnelUser(c.Request().Context(), uint(userId))
+	if err != nil {
+		return utils.HttpBadRequest(c, err.Error())
+	}
+	return c.JSON(http.StatusOK, map[string]string{})
 }
 
 func GetAdminHandler(app *app.App) *echo.Echo {

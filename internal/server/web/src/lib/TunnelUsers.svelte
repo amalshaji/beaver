@@ -1,58 +1,35 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import toast from "svelte-french-toast";
-  import Loader from "./Loader.svelte";
-  import { Tooltip } from "@svelte-plugins/tooltips";
+  import moment from "moment";
 
-  let tunnelUsers = [];
-  let email;
-  let loading = false;
+  import AddTunnelUser from "../lib/modals/AddTunnelUser.svelte";
+  import ShowSecretKey from "./modals/ShowSecretKey.svelte";
+  import DeleteUser from "./modals/DeleteUser.svelte";
 
-  const generateSecretKeyMask = (input: string): string => {
-    let maskedString = "";
-    for (let i = 0; i < input.length; i++) {
-      if (input[i] == "-") {
-        maskedString += "-";
-      } else {
-        maskedString += "x";
-      }
-    }
-    // pad strings to get rid of cls
-    return maskedString;
-  };
+  import { tunnelUserConnectionStatus } from "./store";
 
-  const copyToClipboard = async (text) => {
-    await navigator.clipboard.writeText(text);
+  let addTunnelUserModalOpen = false;
+
+  let tunnelUsers: ITunnelUser[] = [];
+
+  let secretKey = undefined;
+  let showSecretKeyModalOpen = false;
+
+  let tunnelUserToDelete;
+  let deleteUserModalOpen = false;
+
+  const deleteUser = (id: number, email: string) => {
+    tunnelUserToDelete = {
+      ID: id,
+      Email: email,
+    };
+    deleteUserModalOpen = true;
   };
 
   const getTunnelUsers = async () => {
     const res = await fetch("/api/v1/tunnel-users");
     tunnelUsers = await res.json();
-  };
-
-  const createTunnelUser = async () => {
-    loading = true;
-    try {
-      const res = await fetch("/api/v1/tunnel-users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (res.status == 200) {
-        email = "";
-        await getTunnelUsers();
-        toast.success(`New user added: ${data.email}`);
-      } else {
-        toast.error(data.error);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      loading = false;
-    }
   };
 
   const rotateTunnelUserSecretKey = async (email: string) => {
@@ -64,11 +41,12 @@
         },
         body: JSON.stringify({ email }),
       });
-      const data = await res.json();
       if (res.status == 200) {
-        await getTunnelUsers();
-        toast.success(`New tunnel SecretKey generated for: ${data.email}`);
+        const data = await res.json();
+        secretKey = data.SecretKey;
+        showSecretKeyModalOpen = true;
       } else {
+        const data: IError = await res.json();
         toast.error(data.error);
       }
     } catch (err) {
@@ -77,134 +55,236 @@
     }
   };
 
+  const unsubscribe = tunnelUserConnectionStatus.subscribe((n) => {
+    if (tunnelUsers.length === 0) {
+      return;
+    }
+    const obj = {};
+
+    for (const item of n) {
+      obj[item.ID] = {
+        Active: item.Active,
+        LastActiveAt: item.LastActiveAt,
+      };
+    }
+    const tempTunnelUsers: ITunnelUser[] = [];
+    for (const tunnelUser of tunnelUsers) {
+      tunnelUser.Active = obj[tunnelUser.ID].Active;
+      tunnelUser.LastActiveAt = obj[tunnelUser.ID].LastActiveAt;
+      tempTunnelUsers.push(tunnelUser);
+    }
+
+    tunnelUsers = [...tempTunnelUsers];
+  });
+
   onMount(() => {
     getTunnelUsers();
   });
+
+  onDestroy(() => {
+    unsubscribe();
+  });
 </script>
 
-<div class="flex flex-col">
-  <div class="grid grid-cols-1 md:grid-cols-2 my-4 space-y-2">
-    <div>
-      <h1 class="font-semibold text-xl my-3">Tunnel Users</h1>
-      <h3 class="text-gray-700 text-sm">
-        A list of all the registered tunnel users
-      </h3>
-    </div>
-    <div>
-      <form on:submit|preventDefault={createTunnelUser} class="mt-6 flex">
-        <label for="email" class="sr-only">Email address</label>
-        <input
-          type="email"
-          name="email"
-          id="email"
-          bind:value={email}
-          class="shadow-sm focus:ring-gray-500 focus:border-gray-500 block w-full sm:text-sm border-gray-300 rounded-md"
-          placeholder="Enter an email"
-        />
-        <button
-          type="submit"
-          class="ml-4 w-24 h-12 flex-shrink-0 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-        >
-          {#if loading}
-            <Loader />
-          {:else}
-            Add user
-          {/if}
-        </button>
-      </form>
-    </div>
+<AddTunnelUser
+  isOpen={addTunnelUserModalOpen}
+  onClose={() => {
+    addTunnelUserModalOpen = false;
+  }}
+  on:success={(e) => {
+    secretKey = e.detail;
+    showSecretKeyModalOpen = true;
+    getTunnelUsers();
+  }}
+/>
+
+<ShowSecretKey
+  isOpen={showSecretKeyModalOpen}
+  {secretKey}
+  onClose={() => {
+    showSecretKeyModalOpen = false;
+    secretKey = undefined;
+  }}
+/>
+
+<DeleteUser
+  userToDelete={tunnelUserToDelete}
+  isOpen={deleteUserModalOpen}
+  onClose={() => {
+    deleteUserModalOpen = false;
+    tunnelUserToDelete = undefined;
+    getTunnelUsers();
+  }}
+/>
+
+<!-- Tunnel Users -->
+<div class="mt-10 sm:hidden">
+  <div class="px-4 sm:px-6">
+    <h2 class="text-gray-500 text-xs font-medium uppercase tracking-wide">
+      Tunnel Users
+    </h2>
   </div>
-  <div class="-my-2 overflow-x-auto w-full lg:w-5/6 mx-auto mt-6">
-    <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-      <div
-        class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg"
+  <ul
+    role="list"
+    class="mt-3 border-t border-gray-200 divide-y divide-gray-100"
+  >
+    <li>
+      <a
+        href="#"
+        class="group flex items-center justify-between px-4 py-4 hover:bg-slate-700 text-white sm:px-6"
       >
-        {#if tunnelUsers.length > 0}
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >Email</th
-                >
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >Secret Key</th
-                >
-                <th scope="col" class="relative px-6 py-3">
-                  <span class="sr-only">Rotate Secret Key</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              {#each tunnelUsers as tunnelUser}
-                <tr>
-                  <td
-                    class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-                    >{tunnelUser.email}</td
-                  >
-                  <!-- svelte-ignore a11y-click-events-have-key-events -->
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <Tooltip content="click to copy">
-                      <input
-                        class="hover:cursor-pointer border-0 w-full text-sm focus:ring-0 px-0"
-                        readonly
-                        type="text"
-                        value={generateSecretKeyMask(tunnelUser.secret_key)}
-                        on:mouseenter={(e) =>
-                          (e.target.value = tunnelUser.secret_key)}
-                        on:mouseleave={(e) =>
-                          (e.target.value = generateSecretKeyMask(
-                            tunnelUser.secret_key
-                          ))}
-                        on:click={async () =>
-                          await copyToClipboard(tunnelUser.secret_key)}
-                      />
-                    </Tooltip>
-                  </td>
-                  <td
-                    class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
-                  >
-                    <button
-                      on:click={() =>
-                        rotateTunnelUserSecretKey(tunnelUser.email)}
-                      class="text-gray-600 hover:text-gray-900 border rounded-lg px-2 py-1"
-                      >Rotate Secret Key</button
-                    >
-                  </td>
-                </tr>
-              {/each}
-
-              <!-- More people... -->
-            </tbody>
-          </table>
-        {:else}
-          <div
-            class="relative block w-full border-2 border-gray-300 border-dashed rounded-lg p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="mx-auto w-8 h-8 text-gray-400"
+        <span class="flex items-center truncate space-x-3">
+          <span
+            class="w-2.5 h-2.5 flex-shrink-0 rounded-full bg-rose-600"
+            aria-hidden="true"
+          />
+          <span class="font-medium truncate text-sm leading-6">
+            GraphQL API
+            <span class="truncate font-normal text-gray-500"
+              >in Engineering</span
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
-              />
-            </svg>
+          </span>
+        </span>
+        <!-- Heroicon name: solid/chevron-right -->
+        <svg
+          class="ml-4 h-5 w-5 text-gray-400 group-hover:text-gray-500"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      </a>
+    </li>
 
-            <span class="mt-2 block text-sm font-semibold text-gray-900">
-              No tunnel users
-            </span>
-          </div>
-        {/if}
-      </div>
+    <!-- More projects... -->
+  </ul>
+</div>
+
+<!-- Tunnel users table (small breakpoint and up) -->
+<div class="hidden mt-8 sm:block mb-16 sm:px-6 lg:px-8">
+  <div class="sm:flex sm:items-center w-full py-4">
+    <h2 class="text-gray-500 text-xs font-medium uppercase tracking-wide py-3">
+      Tunnel Users
+    </h2>
+    <div class="mt-4 sm:mt-0 sm:ml-4 sm:flex-none">
+      <button
+        type="button"
+        on:click={() => (addTunnelUserModalOpen = true)}
+        class="my-auto float-right inline-flex items-center justify-center rounded-sm border border-transparent bg-gray-600 px-2 py-1 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 sm:w-auto"
+        >Add user</button
+      >
     </div>
   </div>
+  {#if tunnelUsers.length > 0}
+    <div class="align-middle inline-block w-full border">
+      <table class="w-full table-fixed rounded-lg">
+        <thead class="rounded-lg">
+          <tr class="border-t border-gray-200">
+            <th
+              class="px-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-left text-xs font-medium uppercase tracking-wider"
+            >
+              <span class="lg:pl-8">Email</span>
+            </th>
+            <th
+              class="px-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-left text-xs font-medium uppercase tracking-wider"
+              >Last Active</th
+            >
+            <th
+              class="pr-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-right text-xs font-medium uppercase tracking-wider"
+            />
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-100">
+          {#each tunnelUsers as tunnelUser}
+            <tr>
+              <td
+                class="px-6 py-3 max-w-0 w-full whitespace-nowrap text-sm font-medium text-gray-900"
+              >
+                <div class="flex items-center space-x-3 lg:pl-2">
+                  <div
+                    class="flex-shrink-0 w-2.5 h-2.5 rounded-full {tunnelUser.Active
+                      ? 'bg-green-600 backdrop-blur-lg'
+                      : 'bg-gray-100 border border-gray-300'}"
+                    aria-hidden="true"
+                  >
+                    {#if tunnelUser.Active}
+                      <div class="w-2 h-2 bg-green-600 blur-sm" />
+                    {/if}
+                  </div>
+                  <p class="truncate hover:text-gray-600">
+                    <span>
+                      {tunnelUser.Email}
+                    </span>
+                  </p>
+                </div>
+              </td>
+              <td
+                title={tunnelUser.LastActiveAt === null
+                  ? "Not available"
+                  : tunnelUser.Active
+                  ? "Online"
+                  : moment(tunnelUser.LastActiveAt).format(
+                      "MMMM Do YYYY, h:mm:ss a"
+                    )}
+                class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 text-left"
+              >
+                {#if tunnelUser.Active}
+                  Online
+                {:else}
+                  {tunnelUser.LastActiveAt === null
+                    ? "Not available"
+                    : moment(tunnelUser.LastActiveAt).from(new Date())}
+                {/if}
+              </td>
+              <td
+                class="px-6 py-3 whitespace-nowrap text-right text-sm font-medium sm:space-x-4"
+              >
+                <button
+                  class="text-indigo-600 hover:text-indigo-900"
+                  on:click={() => rotateTunnelUserSecretKey(tunnelUser.Email)}
+                  >Rotate Key</button
+                >
+                <button
+                  class="text-red-600 hover:text-red-900"
+                  on:click={() => deleteUser(tunnelUser.ID, tunnelUser.Email)}
+                  >Delete</button
+                >
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  {:else}
+    <button
+      on:click={() => (addTunnelUserModalOpen = true)}
+      type="button"
+      class="relative block w-full border-2 border-gray-300 border-dashed rounded-lg p-12 text-center hover:border-gray-400 focus:outline-none"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="mx-auto h-12 w-12 text-gray-400"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
+        />
+      </svg>
+
+      <span class="mt-2 block text-sm font-medium text-gray-900">
+        Create a new tunnel user
+      </span>
+    </button>
+  {/if}
 </div>

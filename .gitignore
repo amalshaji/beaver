@@ -24,3 +24,4 @@ dist/
 data/
 testdata/
 !tests/data/
+internal/server/admin/test_beaver.db

@@ -2,20 +2,27 @@ package db
 
 import (
 	"log"
+	"os"
 
-	"github.com/timshannon/badgerhold/v4"
+	"github.com/amalshaji/beaver/internal/server/admin"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-func NewStore() *badgerhold.Store {
-	options := badgerhold.DefaultOptions
-	options.Dir = "data"
-	options.ValueDir = "data"
-	options.Logger = nil
-
-	store, err := badgerhold.Open(options)
+func NewStore() *gorm.DB {
+	// create database directory if not exists
+	if _, err := os.Stat("./data"); err != nil {
+		if os.IsNotExist(err) {
+			os.Mkdir("./data", os.ModePerm)
+		}
+	}
+	db, err := gorm.Open(sqlite.Open("./data/beaver.db"), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return store
+	// should automigrate here?
+	db.AutoMigrate(&admin.AdminUser{}, &admin.TunnelUser{}, &admin.Session{})
+
+	return db
 }
