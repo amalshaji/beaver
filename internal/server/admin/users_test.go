@@ -23,13 +23,17 @@ func newTestStore() *gorm.DB {
 	return db
 }
 
+func resetTestStores() {
+	db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
+	db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
+	db.Unscoped().Where("1 = 1").Delete(&Session{})
+}
+
 var db = newTestStore()
 
 func TestCreateSuperUser(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
-		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
-		db.Unscoped().Where("1 = 1").Delete(&Session{})
+		resetTestStores()
 	}()
 
 	var err error
@@ -50,9 +54,7 @@ func TestCreateSuperUser(t *testing.T) {
 
 func TestAdminSuperUser(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
-		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
-		db.Unscoped().Where("1 = 1").Delete(&Session{})
+		resetTestStores()
 	}()
 	var err error
 
@@ -77,9 +79,7 @@ func TestAdminSuperUser(t *testing.T) {
 
 func TestLoginAdminUser(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
-		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
-		db.Unscoped().Where("1 = 1").Delete(&Session{})
+		resetTestStores()
 	}()
 
 	ctx := context.Background()
@@ -105,9 +105,7 @@ func TestLoginAdminUser(t *testing.T) {
 
 func TestValidateSession(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
-		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
-		db.Unscoped().Where("1 = 1").Delete(&Session{})
+		resetTestStores()
 	}()
 
 	ctx := context.Background()
@@ -129,9 +127,7 @@ func TestValidateSession(t *testing.T) {
 
 func TestLogoutAdminUser(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
-		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
-		db.Unscoped().Where("1 = 1").Delete(&Session{})
+		resetTestStores()
 	}()
 
 	ctx := context.Background()
@@ -160,9 +156,7 @@ func TestLogoutAdminUser(t *testing.T) {
 
 func TestCreateTunnelUser(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
-		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
-		db.Unscoped().Where("1 = 1").Delete(&Session{})
+		resetTestStores()
 	}()
 
 	ctx := context.Background()
@@ -176,9 +170,7 @@ func TestCreateTunnelUser(t *testing.T) {
 
 func TestGetTunnelUserBySecretKey(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
-		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
-		db.Unscoped().Where("1 = 1").Delete(&Session{})
+		resetTestStores()
 	}()
 
 	ctx := context.Background()
@@ -193,9 +185,7 @@ func TestGetTunnelUserBySecretKey(t *testing.T) {
 
 func TestRotateTunnelUserSecretKey(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
-		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
-		db.Unscoped().Where("1 = 1").Delete(&Session{})
+		resetTestStores()
 	}()
 
 	ctx := context.Background()
@@ -217,9 +207,7 @@ func TestRotateTunnelUserSecretKey(t *testing.T) {
 
 func TestListTunnelUsers(t *testing.T) {
 	defer func() {
-		db.Unscoped().Where("1 = 1").Delete(&AdminUser{})
-		db.Unscoped().Where("1 = 1").Delete(&TunnelUser{})
-		db.Unscoped().Where("1 = 1").Delete(&Session{})
+		resetTestStores()
 	}()
 
 	ctx := context.Background()
@@ -239,4 +227,96 @@ func TestListTunnelUsers(t *testing.T) {
 	assert.Equal(t, "test@beaver.com", tunnelUsers[0].Email)
 	assert.Equal(t, "test2@beaver.com", tunnelUsers[1].Email)
 	assert.Equal(t, "test3@beaver.com", tunnelUsers[2].Email)
+}
+
+func TestSetActiveConnection(t *testing.T) {
+	defer func() {
+		resetTestStores()
+	}()
+
+	ctx := context.Background()
+	user := NewUserService(db)
+
+	tunnelUser, _ := user.CreateTunnelUser(ctx, "test@beaver.com")
+
+	_ = user.SetActiveConnection(ctx, tunnelUser)
+
+	var tu TunnelUser
+	_ = db.Model(&TunnelUser{}).Where(map[string]any{"Active": true}).First(&tu)
+
+	assert.Equal(t, tunnelUser.ID, tu.ID)
+	assert.Equal(t, tunnelUser.Email, tu.Email)
+}
+
+func TestSetInactiveConnectionStatusForUsers(t *testing.T) {
+	defer func() {
+		resetTestStores()
+	}()
+
+	ctx := context.Background()
+	user := NewUserService(db)
+
+	tunnelUser1, _ := user.CreateTunnelUser(ctx, "test1@beaver.com")
+	tunnelUser2, _ := user.CreateTunnelUser(ctx, "test2@beaver.com")
+	_, _ = user.CreateTunnelUser(ctx, "test3@beaver.com")
+
+	_ = user.SetActiveConnection(ctx, tunnelUser1)
+	_ = user.SetActiveConnection(ctx, tunnelUser2)
+
+	var count int64
+
+	_ = db.Model(&TunnelUser{}).Where(map[string]any{"Active": true}).Count(&count)
+	assert.Equal(t, int64(2), count)
+
+	_ = user.SetInactiveConnectionStatusForUsers(ctx, tunnelUser1.Email, tunnelUser2.Email)
+
+	_ = db.Model(&TunnelUser{}).Where(map[string]any{"Active": true}).Count(&count)
+	assert.Equal(t, int64(0), count)
+}
+
+func TestGetUserConnectionStatus(t *testing.T) {
+	defer func() {
+		resetTestStores()
+	}()
+
+	ctx := context.Background()
+	user := NewUserService(db)
+
+	tunnelUser1, _ := user.CreateTunnelUser(ctx, "test1@beaver.com")
+	tunnelUser2, _ := user.CreateTunnelUser(ctx, "test2@beaver.com")
+	_, _ = user.CreateTunnelUser(ctx, "test3@beaver.com")
+
+	_ = user.SetActiveConnection(ctx, tunnelUser1)
+	_ = user.SetActiveConnection(ctx, tunnelUser2)
+
+	cs, _ := user.GetUserConnectionStatus(ctx)
+
+	assert.True(t, cs[0].Active)
+	assert.True(t, cs[1].Active)
+	assert.False(t, cs[2].Active)
+}
+
+func TestDeleteTunnelUser(t *testing.T) {
+	defer func() {
+		resetTestStores()
+	}()
+
+	ctx := context.Background()
+	user := NewUserService(db)
+
+	tunnelUser1, _ := user.CreateTunnelUser(ctx, "test1@beaver.com")
+	tunnelUser2, _ := user.CreateTunnelUser(ctx, "test2@beaver.com")
+
+	_ = user.DeleteTunnelUser(ctx, tunnelUser1.ID)
+
+	var count int64
+
+	_ = db.Model(&TunnelUser{}).Where("1 = 1").Count(&count)
+	assert.Equal(t, int64(1), count)
+
+	var tu []TunnelUser
+	_ = db.Model(&TunnelUser{}).Find(&tu)
+
+	assert.Equal(t, 1, len(tu))
+	assert.Equal(t, tunnelUser2.ID, tu[0].ID)
 }

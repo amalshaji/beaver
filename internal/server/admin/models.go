@@ -69,12 +69,3 @@ func (t *TunnelUser) RotateSecretKey() string {
 	t.SecretKey = &newSecretKey
 	return newSecretKey
 }
-
-func (t *TunnelUser) ValidateSecretKey(secretKey string) error {
-	secretKey = utils.SanitizeString(secretKey)
-	err := bcrypt.CompareHashAndPassword([]byte(*t.SecretKey), []byte(secretKey))
-	if err != nil {
-		return ErrWrongPassword
-	}
-	return nil
-}
