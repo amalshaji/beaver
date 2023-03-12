@@ -211,6 +211,10 @@ func serverStats(c echo.Context) error {
 
 	result["active_connections"] = len(app.Server.Pools)
 
+	connectionStatus, _ := app.User.GetUserConnectionStatus(c.Request().Context())
+
+	result["connection_status"] = connectionStatus
+
 	return c.JSON(200, result)
 }
 

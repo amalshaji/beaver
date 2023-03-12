@@ -1,38 +1,21 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import toast from "svelte-french-toast";
 
   import Loader from "./Loader.svelte";
   import Status from "./Status.svelte";
 
+  import { tunnelUserConnectionStatus } from "./store";
+
   import moment from "moment";
-
-  interface ITunnelUser {
-    ID: number;
-    CreatedAt: string;
-    UpdatedAt: string;
-    DeletedAt: string;
-    Email: string;
-    Active: boolean;
-    LastActiveAt: string | null;
-  }
-
-  interface IError {
-    error: string;
-  }
 
   let tunnelUsers: ITunnelUser[] = [];
   let email;
   let loading = false;
 
-  const copyToClipboard = async (text) => {
-    await navigator.clipboard.writeText(text);
-  };
-
   const getTunnelUsers = async () => {
     const res = await fetch("/api/v1/tunnel-users");
     tunnelUsers = await res.json();
-    console.log(tunnelUsers);
   };
 
   const createTunnelUser = async () => {
@@ -83,8 +66,34 @@
     }
   };
 
+  const unsubscribe = tunnelUserConnectionStatus.subscribe((n) => {
+    if (tunnelUsers.length === 0) {
+      return;
+    }
+    const obj = {};
+
+    for (const item of n) {
+      obj[item.ID] = {
+        Active: item.Active,
+        LastActiveAt: item.LastActiveAt,
+      };
+    }
+    const tempTunnelUsers: ITunnelUser[] = [];
+    for (const tunnelUser of tunnelUsers) {
+      tunnelUser.Active = obj[tunnelUser.ID].Active;
+      tunnelUser.LastActiveAt = obj[tunnelUser.ID].LastActiveAt;
+      tempTunnelUsers.push(tunnelUser);
+    }
+
+    tunnelUsers = [...tempTunnelUsers];
+  });
+
   onMount(() => {
     getTunnelUsers();
+  });
+
+  onDestroy(() => {
+    unsubscribe();
   });
 </script>
 
@@ -102,7 +111,7 @@
     <li>
       <a
         href="#"
-        class="group flex items-center justify-between px-4 py-4 hover:bg-gray-50 sm:px-6"
+        class="group flex items-center justify-between px-4 py-4 hover:bg-slate-700 text-white sm:px-6"
       >
         <span class="flex items-center truncate space-x-3">
           <span
@@ -139,24 +148,33 @@
 
 <!-- Tunnel users table (small breakpoint and up) -->
 <div class="hidden mt-8 sm:block mb-16 sm:px-6 lg:px-8">
-  <h2 class="text-gray-500 text-xs font-medium uppercase tracking-wide py-3">
-    Tunnel Users
-  </h2>
+  <div class="sm:flex sm:items-center w-full py-4">
+    <h2 class="text-gray-500 text-xs font-medium uppercase tracking-wide py-3">
+      Tunnel Users
+    </h2>
+    <div class="mt-4 sm:mt-0 sm:ml-4 sm:flex-none">
+      <button
+        type="button"
+        class="my-auto float-right inline-flex items-center justify-center rounded-sm border border-transparent bg-gray-600 px-2 py-1 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 sm:w-auto"
+        >Add user</button
+      >
+    </div>
+  </div>
   <div class="align-middle inline-block w-full border border-gray-200">
     <table class="w-full table-fixed">
       <thead>
         <tr class="border-t border-gray-200">
           <th
-            class="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            class="px-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-left text-xs font-medium uppercase tracking-wider"
           >
             <span class="lg:pl-8">Email</span>
           </th>
           <th
-            class="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            class="px-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-left text-xs font-medium uppercase tracking-wider"
             >Last Active</th
           >
           <th
-            class="pr-6 py-3 border-b border-gray-200 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+            class="pr-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-right text-xs font-medium uppercase tracking-wider"
           />
         </tr>
       </thead>
@@ -185,9 +203,13 @@
               </div>
             </td>
             <td
-              title={moment(tunnelUser.LastActiveAt).format(
-                "MMMM Do YYYY, h:mm:ss a"
-              )}
+              title={tunnelUser.LastActiveAt === null
+                ? "Not available"
+                : tunnelUser.Active
+                ? "Online"
+                : moment(tunnelUser.LastActiveAt).format(
+                    "MMMM Do YYYY, h:mm:ss a"
+                  )}
               class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 text-left"
             >
               {#if tunnelUser.Active}
@@ -199,12 +221,16 @@
               {/if}
             </td>
             <td
-              class="px-6 py-3 whitespace-nowrap text-right text-sm font-medium"
+              class="px-6 py-3 whitespace-nowrap text-right text-sm font-medium sm:space-x-4"
             >
               <button
                 class="text-indigo-600 hover:text-indigo-900"
                 on:click={() => rotateTunnelUserSecretKey(tunnelUser.Email)}
                 >Rotate Key</button
+              >
+              <button
+                class="text-red-600 hover:text-red-900"
+                on:click={() => console.log("not implemented")}>Delete</button
               >
             </td>
           </tr>

@@ -2,6 +2,18 @@
   import Navbar from "../lib/Navbar.svelte";
   import Stats from "../lib/Stats.svelte";
   import TunnelUsers from "../lib/TunnelUsers.svelte";
+  import beaverPng from "../assets/beaver.png";
+  import { navigate } from "svelte-routing";
+
+  const logoutUser = async () => {
+    const res = await fetch("/api/v1/logout", {
+      method: "POST",
+      credentials: "same-origin",
+    });
+    if (res.status == 200) {
+      navigate("/", { replace: true });
+    }
+  };
 </script>
 
 <div class="min-h-full">
@@ -72,11 +84,7 @@
       </div>
 
       <div class="flex-shrink-0 flex items-center px-4">
-        <img
-          class="h-8 w-auto"
-          src="https://tailwindui.com/img/logos/workflow-logo-purple-500-mark-gray-700-text.svg"
-          alt="Workflow"
-        />
+        <img class="h-8 w-auto" src={beaverPng} alt="Workflow" />
       </div>
       <div class="mt-5 flex-1 h-0 overflow-y-auto">
         <nav class="px-2">
@@ -216,11 +224,7 @@
     class="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:border-r lg:border-gray-200 lg:pt-5 lg:pb-4 lg:bg-gray-100"
   >
     <div class="flex items-center flex-shrink-0 px-6">
-      <img
-        class="h-8 w-auto"
-        src="https://tailwindui.com/img/logos/workflow-logo-purple-500-mark-gray-700-text.svg"
-        alt="Workflow"
-      />
+      <img class="h-8 w-auto" src={beaverPng} alt="Workflow" />
     </div>
     <!-- Sidebar component, swap this element with another sidebar if you like -->
     <div class="mt-6 h-0 flex-1 flex flex-col overflow-y-auto">
@@ -522,13 +526,9 @@
         <div class="mt-4 flex sm:mt-0 sm:ml-4">
           <button
             type="button"
-            class="order-1 ml-3 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:order-0 sm:ml-0"
-            >Share</button
-          >
-          <button
-            type="button"
-            class="order-0 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:order-1 sm:ml-3"
-            >Create</button
+            on:click={logoutUser}
+            class="order-0 inline-flex items-center px-4 py-2 border shadow-sm text-sm font-medium rounded-md text-gray-600 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:order-1 sm:ml-3"
+            >Logout</button
           >
         </div>
       </div>

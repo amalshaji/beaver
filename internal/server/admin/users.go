@@ -267,3 +267,13 @@ func (u *UserService) SetInactiveConnectionStatusForUsers(ctc context.Context, u
 
 	return nil
 }
+
+func (u *UserService) GetUserConnectionStatus(ctx context.Context) ([]TunnelUser, error) {
+	var connectionStatus []TunnelUser
+
+	result := u.DB.Model(&TunnelUser{}).Select("ID", "Active", "LastActiveAt").Find(&connectionStatus)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return connectionStatus, nil
+}

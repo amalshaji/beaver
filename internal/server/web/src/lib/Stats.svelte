@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
+  import { tunnelUserConnectionStatus } from "./store";
 
   let active_connections: number = 0,
     cpu_used: number = 0,
@@ -9,11 +10,18 @@
 
   const getStats = async () => {
     const res = await fetch("/api/v1/stats");
-    const data = await res.json();
+    const data: IStats = await res.json();
 
     active_connections = data.active_connections;
     memory_used = data.memory_used;
     cpu_used = data.cpu_used[0];
+
+    if (
+      JSON.stringify($tunnelUserConnectionStatus) !=
+      JSON.stringify(data.connection_status)
+    ) {
+      $tunnelUserConnectionStatus = data.connection_status;
+    }
   };
 
   onMount(() => {
