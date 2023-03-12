@@ -235,7 +235,7 @@ func createTunnelUser(c echo.Context) error {
 		return utils.HttpBadRequest(c, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, tunnelUser)
+	return c.JSON(http.StatusOK, map[string]string{"SecretKey": *tunnelUser.SecretKey})
 }
 
 func getTunnelUsers(c echo.Context) error {
@@ -254,11 +254,11 @@ func rotateTunnelUserSecretKey(c echo.Context) error {
 	}
 
 	app := c.Get("app").(*app.App)
-	tunnelUsers, err := app.User.RotateTunnelUserSecretKey(c.Request().Context(), payload.Email)
+	tunnelUser, err := app.User.RotateTunnelUserSecretKey(c.Request().Context(), payload.Email)
 	if err != nil {
 		return utils.HttpBadRequest(c, err.Error())
 	}
-	return c.JSON(http.StatusOK, tunnelUsers)
+	return c.JSON(http.StatusOK, map[string]string{"SecretKey": *tunnelUser.SecretKey})
 }
 
 func GetAdminHandler(app *app.App) *echo.Echo {

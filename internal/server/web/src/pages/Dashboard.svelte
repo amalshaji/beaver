@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Navbar from "../lib/Navbar.svelte";
   import Stats from "../lib/Stats.svelte";
   import TunnelUsers from "../lib/TunnelUsers.svelte";
   import beaverPng from "../assets/beaver.png";

@@ -1,46 +1,24 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import toast from "svelte-french-toast";
+  import moment from "moment";
 
-  import Loader from "./Loader.svelte";
-  import Status from "./Status.svelte";
+  import AddTunnelUser from "../lib/modals/AddTunnelUser.svelte";
+  import ShowSecretKey from "./modals/ShowSecretKey.svelte";
 
   import { tunnelUserConnectionStatus } from "./store";
 
-  import moment from "moment";
+  let addTunnelUserModalOpen = false;
 
   let tunnelUsers: ITunnelUser[] = [];
   let email;
   let loading = false;
+  let secretKey = undefined;
+  let showSecretKeyModalOpen = false;
 
   const getTunnelUsers = async () => {
     const res = await fetch("/api/v1/tunnel-users");
     tunnelUsers = await res.json();
-  };
-
-  const createTunnelUser = async () => {
-    loading = true;
-    try {
-      const res = await fetch("/api/v1/tunnel-users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (res.status == 200) {
-        email = "";
-        await getTunnelUsers();
-        toast.success(`New user added: ${data.email}`);
-      } else {
-        toast.error(data.error);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      loading = false;
-    }
   };
 
   const rotateTunnelUserSecretKey = async (email: string) => {
@@ -53,9 +31,9 @@
         body: JSON.stringify({ email }),
       });
       if (res.status == 200) {
-        const data: ITunnelUser = await res.json();
-        await getTunnelUsers();
-        toast.success(`New tunnel SecretKey generated for: ${data.Email}`);
+        const data = await res.json();
+        secretKey = data.SecretKey;
+        showSecretKeyModalOpen = true;
       } else {
         const data: IError = await res.json();
         toast.error(data.error);
@@ -96,6 +74,27 @@
     unsubscribe();
   });
 </script>
+
+<AddTunnelUser
+  isOpen={addTunnelUserModalOpen}
+  onClose={() => {
+    addTunnelUserModalOpen = false;
+  }}
+  on:success={(e) => {
+    secretKey = e.detail;
+    showSecretKeyModalOpen = true;
+    getTunnelUsers();
+  }}
+/>
+
+<ShowSecretKey
+  isOpen={showSecretKeyModalOpen}
+  {secretKey}
+  onClose={() => {
+    showSecretKeyModalOpen = false;
+    secretKey = undefined;
+  }}
+/>
 
 <!-- Tunnel Users -->
 <div class="mt-10 sm:hidden">
@@ -155,14 +154,15 @@
     <div class="mt-4 sm:mt-0 sm:ml-4 sm:flex-none">
       <button
         type="button"
+        on:click={() => (addTunnelUserModalOpen = true)}
         class="my-auto float-right inline-flex items-center justify-center rounded-sm border border-transparent bg-gray-600 px-2 py-1 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 sm:w-auto"
         >Add user</button
       >
     </div>
   </div>
-  <div class="align-middle inline-block w-full border border-gray-200">
-    <table class="w-full table-fixed">
-      <thead>
+  <div class="align-middle inline-block w-full border">
+    <table class="w-full table-fixed rounded-lg">
+      <thead class="rounded-lg">
         <tr class="border-t border-gray-200">
           <th
             class="px-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-left text-xs font-medium uppercase tracking-wider"
