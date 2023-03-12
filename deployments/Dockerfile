@@ -20,7 +20,7 @@ RUN mkdir -p /app/internal/server/web/dist
 
 COPY --from=frontend-builder /app/dist /app/internal/server/web/dist
 
-RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o beaver_server ./cmd/beaver_server
+RUN CGO_ENABLED=1 go build -ldflags="-s -w -linkmode external -extldflags \"-static\"" -o beaver_server ./cmd/beaver_server
 
 FROM alpine:3.17.2  
 
