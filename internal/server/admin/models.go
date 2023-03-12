@@ -60,6 +60,7 @@ type TunnelUser struct {
 
 	Email        string  `gorm:"index,unique"`
 	SecretKey    *string `gorm:"index,unique" json:"-"`
+	Active       bool
 	LastActiveAt *time.Time
 }
 

@@ -243,3 +243,27 @@ func (u *UserService) RotateTunnelUserSecretKey(ctx context.Context, email strin
 
 	return tunnelUser, nil
 }
+
+func (u *UserService) SetActiveConnection(ctx context.Context, tunnelUser *TunnelUser) error {
+	tunnelUser.Active = true
+
+	result := u.DB.Save(tunnelUser)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+func (u *UserService) SetInactiveConnectionStatusForUsers(ctc context.Context, userIdentifiers ...string) error {
+	if len(userIdentifiers) == 0 {
+		return fmt.Errorf("atleast one userIdentifier is required")
+	}
+
+	result := u.DB.Model(&TunnelUser{}).Where("email", userIdentifiers).Delete(&TunnelUser{})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}

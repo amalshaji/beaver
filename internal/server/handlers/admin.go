@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -68,6 +69,12 @@ func register(c echo.Context) error {
 
 	// Add the WebSocket connection to the pool
 	pool.Register(ws)
+
+	// Set tunnelUser as active
+	err = app.User.SetActiveConnection(c.Request().Context(), tunnelUser)
+	if err != nil {
+		log.Printf("Unable to set connection as active for tunnelUser %s: %v", tunnelUser.Email, err.Error())
+	}
 
 	return nil
 }

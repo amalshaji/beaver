@@ -18,7 +18,7 @@ func NewApp(configFile string) *App {
 	return &App{
 		DB:     db,
 		User:   admin.NewUserService(db),
-		Server: tunnel.NewServer(configFile),
+		Server: tunnel.NewServer(configFile, db),
 	}
 }
 
