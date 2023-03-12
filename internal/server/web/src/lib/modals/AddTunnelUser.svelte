@@ -5,7 +5,7 @@
 
   const dispatch = createEventDispatcher();
 
-  export let isOpen = true;
+  export let isOpen = false;
   export let onClose;
   export let loading = false;
 

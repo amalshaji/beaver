@@ -5,16 +5,27 @@
 
   import AddTunnelUser from "../lib/modals/AddTunnelUser.svelte";
   import ShowSecretKey from "./modals/ShowSecretKey.svelte";
+  import DeleteUser from "./modals/DeleteUser.svelte";
 
   import { tunnelUserConnectionStatus } from "./store";
 
   let addTunnelUserModalOpen = false;
 
   let tunnelUsers: ITunnelUser[] = [];
-  let email;
-  let loading = false;
+
   let secretKey = undefined;
   let showSecretKeyModalOpen = false;
+
+  let tunnelUserToDelete;
+  let deleteUserModalOpen = false;
+
+  const deleteUser = (id: number, email: string) => {
+    tunnelUserToDelete = {
+      ID: id,
+      Email: email,
+    };
+    deleteUserModalOpen = true;
+  };
 
   const getTunnelUsers = async () => {
     const res = await fetch("/api/v1/tunnel-users");
@@ -96,6 +107,16 @@
   }}
 />
 
+<DeleteUser
+  userToDelete={tunnelUserToDelete}
+  isOpen={deleteUserModalOpen}
+  onClose={() => {
+    deleteUserModalOpen = false;
+    tunnelUserToDelete = undefined;
+    getTunnelUsers();
+  }}
+/>
+
 <!-- Tunnel Users -->
 <div class="mt-10 sm:hidden">
   <div class="px-4 sm:px-6">
@@ -160,82 +181,110 @@
       >
     </div>
   </div>
-  <div class="align-middle inline-block w-full border">
-    <table class="w-full table-fixed rounded-lg">
-      <thead class="rounded-lg">
-        <tr class="border-t border-gray-200">
-          <th
-            class="px-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-left text-xs font-medium uppercase tracking-wider"
-          >
-            <span class="lg:pl-8">Email</span>
-          </th>
-          <th
-            class="px-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-left text-xs font-medium uppercase tracking-wider"
-            >Last Active</th
-          >
-          <th
-            class="pr-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-right text-xs font-medium uppercase tracking-wider"
-          />
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-100">
-        {#each tunnelUsers as tunnelUser}
-          <tr>
-            <td
-              class="px-6 py-3 max-w-0 w-full whitespace-nowrap text-sm font-medium text-gray-900"
+  {#if tunnelUsers.length > 0}
+    <div class="align-middle inline-block w-full border">
+      <table class="w-full table-fixed rounded-lg">
+        <thead class="rounded-lg">
+          <tr class="border-t border-gray-200">
+            <th
+              class="px-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-left text-xs font-medium uppercase tracking-wider"
             >
-              <div class="flex items-center space-x-3 lg:pl-2">
-                <div
-                  class="flex-shrink-0 w-2.5 h-2.5 rounded-full {tunnelUser.Active
-                    ? 'bg-green-600 backdrop-blur-lg'
-                    : 'bg-gray-100 border border-gray-300'}"
-                  aria-hidden="true"
-                >
-                  {#if tunnelUser.Active}
-                    <div class="w-2 h-2 bg-green-600 blur-sm" />
-                  {/if}
-                </div>
-                <p class="truncate hover:text-gray-600">
-                  <span>
-                    {tunnelUser.Email}
-                  </span>
-                </p>
-              </div>
-            </td>
-            <td
-              title={tunnelUser.LastActiveAt === null
-                ? "Not available"
-                : tunnelUser.Active
-                ? "Online"
-                : moment(tunnelUser.LastActiveAt).format(
-                    "MMMM Do YYYY, h:mm:ss a"
-                  )}
-              class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 text-left"
+              <span class="lg:pl-8">Email</span>
+            </th>
+            <th
+              class="px-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-left text-xs font-medium uppercase tracking-wider"
+              >Last Active</th
             >
-              {#if tunnelUser.Active}
-                Online
-              {:else}
-                {tunnelUser.LastActiveAt === null
-                  ? "Not available"
-                  : moment(tunnelUser.LastActiveAt).from(new Date())}
-              {/if}
-            </td>
-            <td
-              class="px-6 py-3 whitespace-nowrap text-right text-sm font-medium sm:space-x-4"
-            >
-              <button
-                class="text-indigo-600 hover:text-indigo-900"
-                on:click={() => rotateTunnelUserSecretKey(tunnelUser.Email)}
-                >Rotate Key</button
-              >
-              <button
-                class="text-red-600 hover:text-red-900"
-                on:click={() => console.log("not implemented")}>Delete</button
-              >
-            </td>
+            <th
+              class="pr-6 py-3 border-b border-gray-200 bg-zinc-500 text-white text-right text-xs font-medium uppercase tracking-wider"
+            />
           </tr>
-        {/each}
-      </tbody>
-    </table>
-  </div>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-100">
+          {#each tunnelUsers as tunnelUser}
+            <tr>
+              <td
+                class="px-6 py-3 max-w-0 w-full whitespace-nowrap text-sm font-medium text-gray-900"
+              >
+                <div class="flex items-center space-x-3 lg:pl-2">
+                  <div
+                    class="flex-shrink-0 w-2.5 h-2.5 rounded-full {tunnelUser.Active
+                      ? 'bg-green-600 backdrop-blur-lg'
+                      : 'bg-gray-100 border border-gray-300'}"
+                    aria-hidden="true"
+                  >
+                    {#if tunnelUser.Active}
+                      <div class="w-2 h-2 bg-green-600 blur-sm" />
+                    {/if}
+                  </div>
+                  <p class="truncate hover:text-gray-600">
+                    <span>
+                      {tunnelUser.Email}
+                    </span>
+                  </p>
+                </div>
+              </td>
+              <td
+                title={tunnelUser.LastActiveAt === null
+                  ? "Not available"
+                  : tunnelUser.Active
+                  ? "Online"
+                  : moment(tunnelUser.LastActiveAt).format(
+                      "MMMM Do YYYY, h:mm:ss a"
+                    )}
+                class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 text-left"
+              >
+                {#if tunnelUser.Active}
+                  Online
+                {:else}
+                  {tunnelUser.LastActiveAt === null
+                    ? "Not available"
+                    : moment(tunnelUser.LastActiveAt).from(new Date())}
+                {/if}
+              </td>
+              <td
+                class="px-6 py-3 whitespace-nowrap text-right text-sm font-medium sm:space-x-4"
+              >
+                <button
+                  class="text-indigo-600 hover:text-indigo-900"
+                  on:click={() => rotateTunnelUserSecretKey(tunnelUser.Email)}
+                  >Rotate Key</button
+                >
+                <button
+                  class="text-red-600 hover:text-red-900"
+                  on:click={() => deleteUser(tunnelUser.ID, tunnelUser.Email)}
+                  >Delete</button
+                >
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  {:else}
+    <button
+      on:click={() => (addTunnelUserModalOpen = true)}
+      type="button"
+      class="relative block w-full border-2 border-gray-300 border-dashed rounded-lg p-12 text-center hover:border-gray-400 focus:outline-none"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="mx-auto h-12 w-12 text-gray-400"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
+        />
+      </svg>
+
+      <span class="mt-2 block text-sm font-medium text-gray-900">
+        Create a new tunnel user
+      </span>
+    </button>
+  {/if}
 </div>

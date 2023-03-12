@@ -277,3 +277,11 @@ func (u *UserService) GetUserConnectionStatus(ctx context.Context) ([]TunnelUser
 	}
 	return connectionStatus, nil
 }
+
+func (u *UserService) DeleteTunnelUser(ctx context.Context, id uint) error {
+	result := u.DB.Unscoped().Delete(&TunnelUser{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}

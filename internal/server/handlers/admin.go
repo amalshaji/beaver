@@ -126,6 +126,7 @@ func setupApiRoutes(e *echo.Echo) {
 	g.GET("/tunnel-users", getTunnelUsers, authRequiredMiddleware)
 	g.POST("/tunnel-users", createTunnelUser, authRequiredMiddleware)
 	g.PUT("/tunnel-users", rotateTunnelUserSecretKey, authRequiredMiddleware)
+	g.DELETE("/tunnel-users/:id", deleteTunnelUser, authRequiredMiddleware)
 }
 
 func superUserSignupApi(c echo.Context) error {
@@ -259,6 +260,22 @@ func rotateTunnelUserSecretKey(c echo.Context) error {
 		return utils.HttpBadRequest(c, err.Error())
 	}
 	return c.JSON(http.StatusOK, map[string]string{"SecretKey": *tunnelUser.SecretKey})
+}
+
+func deleteTunnelUser(c echo.Context) error {
+	userIdStr := c.Param("id")
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		return utils.HttpBadRequest(c, "id must be a positive number")
+
+	}
+
+	app := c.Get("app").(*app.App)
+	err = app.User.DeleteTunnelUser(c.Request().Context(), uint(userId))
+	if err != nil {
+		return utils.HttpBadRequest(c, err.Error())
+	}
+	return c.JSON(http.StatusOK, map[string]string{})
 }
 
 func GetAdminHandler(app *app.App) *echo.Echo {
