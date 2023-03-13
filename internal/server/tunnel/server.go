@@ -10,7 +10,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/amalshaji/beaver/internal/server/admin"
 	"github.com/gorilla/websocket"
+	"gorm.io/gorm"
 )
 
 // Server is a Reverse HTTP Proxy over WebSocket
@@ -40,6 +42,9 @@ type Server struct {
 	// "server" thread sends the value to this channel when accepting requests in the endpoint /requests,
 	// and "Dispatcher" thread reads this channel.
 	Dispatcher chan *ConnectionRequest
+
+	// DB connection
+	DB *gorm.DB
 }
 
 // ConnectionRequest is used to request a proxy connection from the dispatcher
@@ -59,7 +64,7 @@ func NewConnectionRequest(timeout time.Duration, connectionFor string) (cr *Conn
 }
 
 // NewServer return a new Server instance
-func NewServer(configFile string) (server *Server) {
+func NewServer(configFile string, db *gorm.DB) (server *Server) {
 	rand.Seed(time.Now().Unix())
 
 	// Load configuration
@@ -75,6 +80,8 @@ func NewServer(configFile string) (server *Server) {
 
 	server.done = make(chan struct{})
 	server.Dispatcher = make(chan *ConnectionRequest)
+
+	server.DB = db
 
 	return
 }
@@ -111,9 +118,13 @@ func (s *Server) clean() {
 	idle := 0
 	busy := 0
 
+	var inactiveConnections = make([]string, 0)
+
 	pools := make(map[string]*Pool)
 	for subdomain, pool := range s.Pools {
 		if pool.IsEmpty() {
+			inactiveConnections = append(inactiveConnections, pool.UserIdentifier)
+
 			log.Printf("Removing empty connection pool : %s", pool.ID)
 			pool.Shutdown()
 		} else {
@@ -125,9 +136,27 @@ func (s *Server) clean() {
 		busy += ps.Busy
 	}
 
+	s.updateInactiveStatusForClosedConnections(inactiveConnections...)
+
 	log.Printf("%d pools, %d idle, %d busy", len(pools), idle, busy)
 
 	s.Pools = pools
+}
+
+func (s *Server) updateInactiveStatusForClosedConnections(connections ...string) {
+	if len(connections) == 0 {
+		return
+	}
+
+	currentTime := time.Now()
+
+	result := s.DB.Model(admin.TunnelUser{}).
+		Where("email in (?)", connections).
+		Updates(map[string]any{"Active": false, "LastActiveAt": &currentTime})
+
+	if result.Error != nil {
+		log.Println("unable to update status for inactive connections: ", result.Error.Error())
+	}
 }
 
 // Dispatch connection from available pools to clients requests

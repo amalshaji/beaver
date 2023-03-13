@@ -19,6 +19,16 @@ var superUserCmd = &cobra.Command{
 	Use:   "createsuperuser",
 	Short: "Create a new super user",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Create new user service
+		db := db.NewStore()
+		ctx := context.Background()
+		user := admin.NewUserService(db)
+
+		if err := user.CanCreateSuperUser(ctx); err != nil {
+			fmt.Println(color.Red(err.Error()))
+			os.Exit(1)
+		}
+
 		var err error
 		var email string
 		var password []byte
@@ -41,11 +51,6 @@ var superUserCmd = &cobra.Command{
 			fmt.Println(color.Red(err.Error()))
 			os.Exit(1)
 		}
-
-		// Create new user service
-		db := db.NewStore()
-		ctx := context.Background()
-		user := admin.NewUserService(db)
 
 		_, err = user.CreateSuperUser(ctx, email, string(password))
 		if err != nil {
