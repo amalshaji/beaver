@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/amalshaji/beaver/internal/client/dashboard"
 	"github.com/gorilla/websocket"
 )
 
@@ -15,10 +16,12 @@ type Client struct {
 	client *http.Client
 	dialer *websocket.Dialer
 	pools  map[string]*Pool
+
+	connectionLogger *dashboard.ConnectionLogger
 }
 
 // NewClient creates a new Client.
-func NewClient(config *Config) (c *Client) {
+func NewClient(config *Config, connectionLogger *dashboard.ConnectionLogger) (c *Client) {
 	c = new(Client)
 	c.Config = config
 	c.client = &http.Client{
@@ -28,6 +31,7 @@ func NewClient(config *Config) (c *Client) {
 	}
 	c.dialer = &websocket.Dialer{}
 	c.pools = make(map[string]*Pool)
+	c.connectionLogger = connectionLogger
 	return
 }
 

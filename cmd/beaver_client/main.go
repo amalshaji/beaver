@@ -8,21 +8,31 @@ import (
 	"syscall"
 
 	"github.com/amalshaji/beaver/internal/client"
+	"github.com/amalshaji/beaver/internal/client/dashboard"
 )
 
 func startTunnels(tunnels []client.TunnelConfig) {
 	ctx := context.Background()
 	var proxies []*client.Client
 
+	connectionLogger := dashboard.NewConnectionLogger()
+
 	for _, proxyTunnel := range tunnels {
-		config, err := client.LoadConfiguration(configFile, proxyTunnel.Subdomain, proxyTunnel.Port, showWsReadErrors)
+		config, err := client.LoadConfiguration(
+			configFile,
+			proxyTunnel.Subdomain,
+			proxyTunnel.Port,
+			showWsReadErrors,
+		)
 		if err != nil {
 			log.Fatalf("Unable to load configuration: %s", err)
 		}
-		proxy := client.NewClient(&config)
+		proxy := client.NewClient(&config, connectionLogger)
 		proxies = append(proxies, proxy)
 		proxy.Start(ctx)
 	}
+
+	e := dashboard.StartServer(connectionLogger)
 
 	// Wait signals
 	sigCh := make(chan os.Signal, 1)
@@ -33,6 +43,9 @@ func startTunnels(tunnels []client.TunnelConfig) {
 	for _, proxy := range proxies {
 		proxy.Shutdown()
 	}
+
+	dashboard.StopServer(e)
+
 }
 
 func main() {
