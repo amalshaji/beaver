@@ -17,7 +17,7 @@ import (
 )
 
 func (c *Connection) registerNewConnection(subdomain string) {
-	err := c.pool.client.connectionLogger.AddConnection(subdomain)
+	err := c.pool.client.connectionLogger.AddConnection(subdomain, nil)
 	if err != nil {
 		log.Println(err.Error())
 	}
